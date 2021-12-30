@@ -309,8 +309,7 @@ class BaseSymbolic(BaseEstimator, metaclass=ABCMeta):
         if sample_weight is not None:
             sample_weight = check_array(sample_weight, ensure_2d=False)
         # 为了进行循环测试，对x进行改造，
-        #_, self.n_features_ = X.shape # 此为原版，如需要可调整回
-        self.n_features_ = 18 # 此为改版，为了符合现有的情况进行改造
+        _, self.n_features_ = X.shape # 此为原版，如需要可调整回
 
         hall_of_fame = self.hall_of_fame
         if hall_of_fame is None:
