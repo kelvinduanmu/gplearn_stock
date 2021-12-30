@@ -303,7 +303,7 @@ class BaseSymbolic(BaseEstimator, metaclass=ABCMeta):
                                  % n_trim_classes)
             self.n_classes_ = len(self.classes_)
         else:
-            print(u'here')
+            # print(u'here')
             pass
             #X, y = check_X_y(X, y, y_numeric=True) # 此为原版，需要的话进行调整
         if sample_weight is not None:
