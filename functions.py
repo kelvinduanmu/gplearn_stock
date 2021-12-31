@@ -124,7 +124,7 @@ def make_function(function, name, arity, wrap=True):
 def _protected_division(x1, x2):
     """Closure of division (x1/x2) for zero denominator."""
     with np.errstate(divide='ignore', invalid='ignore'):
-        return np.where(np.abs(x2) > 0.001, np.divide(x1, x2), 1.)
+        return np.divide(x1, x2).fillna(1)
 
 
 def _protected_sqrt(x1):
@@ -140,7 +140,7 @@ def _protected_log(x1):
 def _protected_inverse(x1):
     """Closure of log for zero arguments."""
     with np.errstate(divide='ignore', invalid='ignore'):
-        return np.where(np.abs(x1) > 0.001, 1. / x1, 0.)
+        return (1. / x1).fillna(0)
 
 
 def _sigmoid(x1):
