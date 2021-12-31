@@ -386,6 +386,7 @@ class _Program(object):
                 apply_stack[-1].append(node)
            
             while len(apply_stack[-1]) == apply_stack[-1][0].arity + 1:
+                # import pdb; pdb.set_trace()
                 function = apply_stack[-1][0]
                 terminals = [np.repeat(t, XX.shape[0]) if isinstance(t, float) else XX.loc[:, XX.columns[t]] if isinstance(t, int) else t for t in apply_stack[-1][1:]]
 
@@ -408,6 +409,7 @@ class _Program(object):
         X:股票的因子序列
         Y:给定的适应度情况
         '''
+        # import pdb; pdb.set_trace()
         return self.execute(x).unstack()
         
     def get_all_indices(self, n_samples=None, max_samples=None,
