@@ -118,6 +118,7 @@ def _weighted_pearson(y, y_pred, w):
 
 def _weighted_spearman(y, y_pred, w):
     """Calculate the weighted Spearman correlation coefficient."""
+    # import pdb; pdb.set_trace()
     y_pred_ranked = np.apply_along_axis(rankdata, 0, y_pred)
     y_ranked = np.apply_along_axis(rankdata, 0, y)
     return _weighted_pearson(y_pred_ranked, y_ranked, w)
@@ -151,9 +152,11 @@ def _log_loss(y, y_pred, w):
 
 
 weighted_pearson = _Fitness(function=_weighted_pearson,
-                            greater_is_better=True)
+                            greater_is_better=True,
+                            stock_is=True)
 weighted_spearman = _Fitness(function=_weighted_spearman,
-                             greater_is_better=True)
+                             greater_is_better=True,
+                             stock_is=True)
 mean_absolute_error = _Fitness(function=_mean_absolute_error,
                                greater_is_better=False)
 mean_square_error = _Fitness(function=_mean_square_error,
