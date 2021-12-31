@@ -13,6 +13,7 @@ import numbers
 import numpy as np
 from joblib import wrap_non_picklable_objects
 from scipy.stats import rankdata
+import pandas as pd
 
 __all__ = ['make_fitness']
 
@@ -102,27 +103,36 @@ def make_fitness(function, greater_is_better, wrap=True):
                     greater_is_better=greater_is_better)
 
 
-def _weighted_pearson(y, y_pred, w):
+def _weighted_pearson(y, y_pred, ww):
     """Calculate the weighted Pearson correlation coefficient."""
-    with np.errstate(divide='ignore', invalid='ignore'):
-        y_pred_demean = y_pred - np.average(y_pred, weights=w)
-        y_demean = y - np.average(y, weights=w)
-        corr = ((np.sum(w * y_pred_demean * y_demean) / np.sum(w)) /
-                np.sqrt((np.sum(w * y_pred_demean ** 2) *
-                         np.sum(w * y_demean ** 2)) /
-                        (np.sum(w) ** 2)))
-    if np.isfinite(corr):
-        return np.abs(corr)
-    return 0.
+    corrs = []
+    for i in range(y.shape[1]):
+        y_pred_sub = y_pred[:, i]
+        y_sub = y[:, i]
+        with np.errstate(divide='ignore', invalid='ignore'):
+            y_pred_demean = y_pred_sub - np.average(y_pred_sub, weights=ww)
+            y_demean = y_sub - np.average(y_sub, weights=ww)
+            corr = ((np.sum(ww * y_pred_demean * y_demean) / np.sum(ww)) /
+                    np.sqrt((np.sum(ww * y_pred_demean ** 2) *
+                             np.sum(ww * y_demean ** 2)) /
+                            (np.sum(ww) ** 2)))
+            corrs.append(corr)
+    return pd.Series(corrs)
+    # if np.isfinite(corr):
+    #     return np.abs(corr)
+    # return 0.
 
 
 def _weighted_spearman(y, y_pred, w):
     """Calculate the weighted Spearman correlation coefficient."""
-    # import pdb; pdb.set_trace()
     y_pred_ranked = np.apply_along_axis(rankdata, 0, y_pred)
     y_ranked = np.apply_along_axis(rankdata, 0, y)
     return _weighted_pearson(y_pred_ranked, y_ranked, w)
 
+def _weighted_spearman_icir(y, y_pred, w):
+    """Calculate the weighted Spearman correlation coefficient icir."""
+    corrs = _weighted_spearman(y, y_pred, w)
+    return corrs.mean() / corrs.std()
 
 def _mean_absolute_error(y, y_pred, w):
     """Calculate the mean absolute error."""
@@ -154,7 +164,7 @@ def _log_loss(y, y_pred, w):
 weighted_pearson = _Fitness(function=_weighted_pearson,
                             greater_is_better=True,
                             stock_is=True)
-weighted_spearman = _Fitness(function=_weighted_spearman,
+weighted_spearman_icir = _Fitness(function=_weighted_spearman_icir,
                              greater_is_better=True,
                              stock_is=True)
 mean_absolute_error = _Fitness(function=_mean_absolute_error,
@@ -172,7 +182,7 @@ stock_dedicated = _Fitness(function=_stock_dedicated,
                     
 
 _fitness_map = {'pearson': weighted_pearson,
-                'spearman': weighted_spearman,
+                'spearman_icir': weighted_spearman_icir,
                 'mean absolute error': mean_absolute_error,
                 'mse': mean_square_error,
                 'rmse': root_mean_square_error,

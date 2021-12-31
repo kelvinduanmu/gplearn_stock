@@ -408,15 +408,8 @@ class _Program(object):
         X:股票的因子序列
         Y:给定的适应度情况
         '''
-        shouyi = []
-        for i in range(len(x)):
-            if i%5==0:
-                y_pred = self.execute(np.array(x[i]))
-                shouyi.append(self.jiasu(y_pred,y[i]))
-                del y_pred
-        gc.collect()
-        return shouyi
-
+        return self.execute(x).unstack()
+        
     def get_all_indices(self, n_samples=None, max_samples=None,
                         random_state=None):
         """Get the indices on which to evaluate the fitness of a program.
