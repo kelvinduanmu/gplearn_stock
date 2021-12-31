@@ -139,6 +139,7 @@ def _parallel_evolve(n_programs, parents, X, y, sample_weight, seeds, params):
         oob_sample_weight[indices] = 0
         bb = time()
         #print (u'花费事假',time() - tt)
+        # import pdb; pdb.set_trace()
         program.raw_fitness_ = program.raw_fitness(X, y, curr_sample_weight)
         #print (u'这里时间',time()-bb)
         #a = time()
@@ -467,16 +468,7 @@ class BaseSymbolic(BaseEstimator, metaclass=ABCMeta):
             seeds = random_state.randint(MAX_INT, size=self.population_size)
 
             # import pdb; pdb.set_trace()
-            population = Parallel(n_jobs=n_jobs,
-                                  verbose=int(self.verbose > 1))(
-                delayed(_parallel_evolve)(n_programs[i],
-                                          parents,
-                                          X,
-                                          y,
-                                          sample_weight,
-                                          seeds[starts[i]:starts[i + 1]],
-                                          params)
-                for i in range(n_jobs))
+            population = Parallel(n_jobs=n_jobs, verbose=int(self.verbose > 1))(delayed(_parallel_evolve)(n_programs[i], parents, X, y, sample_weight, seeds[starts[i]:starts[i + 1]], params) for i in range(n_jobs))
 
             # Reduce, maintaining order across different n_jobs
             population = list(itertools.chain.from_iterable(population))
