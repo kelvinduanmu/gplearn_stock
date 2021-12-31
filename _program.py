@@ -351,19 +351,19 @@ class _Program(object):
         """Calculates the number of functions and terminals in the program."""
         return len(self.program)
 
-    def execute(self, X):
-        """Execute the program according to X.
+    def execute(self, XX):
+        """Execute the program according to XX.
 
         Parameters
         ----------
-        X : {array-like}, shape = [n_samples, n_features]
+        XX : {array-like}, shape = [n_samples, n_features]
             Training vectors, where n_samples is the number of samples and
             n_features is the number of features.
 
         Returns
         -------
         y_hats : array-like, shape = [n_samples]
-            The result of executing the program on X.
+            The result of executing the program on XX.
 
         """
         # Check for single-node programs
@@ -371,10 +371,10 @@ class _Program(object):
         node = self.program[0]
         if isinstance(node, float):
             #print(time() -t,u'no1')
-            return np.repeat(node, X.shape[0])
+            return np.repeat(node, XX.shape[0])
         if isinstance(node, int):
             #print (time()-t,u'no2')
-            return X[:, node]
+            return XX[:, node]
         
         apply_stack = []
         
@@ -387,9 +387,7 @@ class _Program(object):
            
             while len(apply_stack[-1]) == apply_stack[-1][0].arity + 1:
                 function = apply_stack[-1][0]
-                terminals = [np.repeat(t, X.shape[0]) if isinstance(t, float)
-                             else X[:, t] if isinstance(t, int)
-                             else t for t in apply_stack[-1][1:]]
+                terminals = [np.repeat(t, XX.shape[0]) if isinstance(t, float) else XX.loc[:, XX.columns[t]] if isinstance(t, int) else t for t in apply_stack[-1][1:]]
 
                 intermediate_result = function(*terminals)
                 if len(apply_stack) != 1:
