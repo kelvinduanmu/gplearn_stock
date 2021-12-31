@@ -39,8 +39,8 @@ MAX_INT = np.iinfo(np.int32).max
 def _parallel_evolve(n_programs, parents, X, y, sample_weight, seeds, params):
     """Private function used to build a batch of programs within a job."""
     ''' 一个进化函数'''
-    #n_samples, n_features = X.shape # 此为原版，如需要可调整回
-    n_samples, n_features= len(X),18
+    n_samples, n_features = X.shape # 此为原版，如需要可调整回
+    # n_samples, n_features= len(X),18
     # Unpack parameters
     tournament_size = params['tournament_size']
     function_set = params['function_set']
@@ -119,19 +119,8 @@ def _parallel_evolve(n_programs, parents, X, y, sample_weight, seeds, params):
                           'parent_nodes': []}
         #print (function_set)
         #input()
-        program = _Program(function_set=function_set,
-                           arities=arities,
-                           init_depth=init_depth,
-                           init_method=init_method,
-                           n_features=n_features,
-                           metric=metric,
-                           transformer=transformer,
-                           const_range=const_range,
-                           p_point_replace=p_point_replace,
-                           parsimony_coefficient=parsimony_coefficient,
-                           feature_names=feature_names,
-                           random_state=random_state,
-                           program=program)
+        # import pdb; pdb.set_trace()
+        program = _Program(function_set=function_set, arities=arities, init_depth=init_depth, init_method=init_method, n_features=n_features, metric=metric, transformer=transformer, const_range=const_range, p_point_replace=p_point_replace, parsimony_coefficient=parsimony_coefficient, feature_names=feature_names, random_state=random_state, program=program)
 
         program.parents = genome
         
@@ -463,7 +452,7 @@ class BaseSymbolic(BaseEstimator, metaclass=ABCMeta):
             self._verbose_reporter()
         
         for gen in range(prior_generations, self.generations):
-            print(gen,u'当前代数')
+            print(gen, u'current generation')
 
             start_time = time()
 
@@ -477,6 +466,7 @@ class BaseSymbolic(BaseEstimator, metaclass=ABCMeta):
                 self.population_size, self.n_jobs)
             seeds = random_state.randint(MAX_INT, size=self.population_size)
 
+            # import pdb; pdb.set_trace()
             population = Parallel(n_jobs=n_jobs,
                                   verbose=int(self.verbose > 1))(
                 delayed(_parallel_evolve)(n_programs[i],
