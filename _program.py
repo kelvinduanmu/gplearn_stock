@@ -19,6 +19,7 @@ from sklearn.utils.random import sample_without_replacement
 from time import time
 from .functions import _Function
 from .utils import check_random_state
+import pandas as pd
 
 
 class _Program(object):
@@ -388,7 +389,8 @@ class _Program(object):
             while len(apply_stack[-1]) == apply_stack[-1][0].arity + 1:
                 # import pdb; pdb.set_trace()
                 function = apply_stack[-1][0]
-                terminals = [np.repeat(t, XX.shape[0]) if isinstance(t, float) else XX.loc[:, XX.columns[t]] if isinstance(t, int) else t for t in apply_stack[-1][1:]]
+                terminals = [pd.Series([t] * XX.shape[0], index=XX.index) if isinstance(t, float) else XX.loc[:, XX.columns[t]] if isinstance(t, int) else t for t in apply_stack[-1][1:]]
+                # terminals = [np.repeat(t, XX.shape[0]) if isinstance(t, float) else XX.loc[:, XX.columns[t]] if isinstance(t, int) else t for t in apply_stack[-1][1:]]
 
                 intermediate_result = function(*terminals)
                 if len(apply_stack) != 1:
