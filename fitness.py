@@ -109,8 +109,8 @@ def _weighted_pearson(y, y_pred, ww):
     for i in range(y.shape[1]):
         y_pred_sub = y_pred.iloc[:, i].dropna()
         y_sub = y.iloc[:, i].dropna()
+        mask = y_pred_sub.index.intersection(y_sub.index)
         if len(mask):
-            mask = y_pred_sub.index.intersection(y_sub.index)
             y_pred_sub = y_pred_sub.loc[mask].values
             y_sub = y_sub.loc[mask].values
             ww_sub = list(pd.Series(ww, index=y_pred.index)[mask])
