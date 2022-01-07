@@ -467,7 +467,6 @@ class BaseSymbolic(BaseEstimator, metaclass=ABCMeta):
                 self.population_size, self.n_jobs)
             seeds = random_state.randint(MAX_INT, size=self.population_size)
 
-            # import pdb; pdb.set_trace()
             population = Parallel(n_jobs=n_jobs, verbose=int(self.verbose > 1))(delayed(_parallel_evolve)(n_programs[i], parents, X, y, sample_weight, seeds[starts[i]:starts[i + 1]], params) for i in range(n_jobs))
 
             # Reduce, maintaining order across different n_jobs
@@ -534,9 +533,9 @@ class BaseSymbolic(BaseEstimator, metaclass=ABCMeta):
                 best_fitness = fitness[np.argmin(fitness)]
                 if best_fitness <= self.stopping_criteria:
                     break
-            for tt in self._programs[-1]:
-                print (tt,'uuuuuu')
-            input()
+            # for tt in self._programs[-1]:
+            #     print (tt,'uuuuuu')
+            # input()
         if isinstance(self, TransformerMixin):
             # Find the best individuals in the final generation
             fitness = np.array(fitness)
