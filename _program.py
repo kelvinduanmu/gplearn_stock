@@ -375,7 +375,7 @@ class _Program(object):
             return np.repeat(node, XX.shape[0])
         if isinstance(node, int):
             #print (time()-t,u'no2')
-            return XX[:, node]
+            return XX.iloc[:, node]
         
         apply_stack = []
         
