@@ -109,15 +109,16 @@ def _weighted_pearson(y, y_pred, ww):
     for i in range(y.shape[1]):
         y_pred_sub = y_pred.iloc[:, i].dropna()
         y_sub = y.iloc[:, i].dropna()
-        mask = y_pred_sub.index.intersection(y_sub.index)
-        y_pred_sub = y_pred_sub.loc[mask].values
-        y_sub = y_sub.loc[mask].values
-        ww_sub = list(pd.Series(ww, index=y_pred.index)[mask])
-        with np.errstate(divide='ignore', invalid='ignore'):
-            y_pred_demean = y_pred_sub - np.average(y_pred_sub, weights=ww_sub)
-            y_demean = y_sub - np.average(y_sub, weights=ww_sub)
-            corr = ((np.sum(ww_sub * y_pred_demean * y_demean) / np.sum(ww_sub)) / np.sqrt((np.sum(ww_sub * y_pred_demean ** 2) * np.sum(ww_sub * y_demean ** 2)) / (np.sum(ww_sub) ** 2)))
-            corrs.append(corr)
+        if len(mask):
+            mask = y_pred_sub.index.intersection(y_sub.index)
+            y_pred_sub = y_pred_sub.loc[mask].values
+            y_sub = y_sub.loc[mask].values
+            ww_sub = list(pd.Series(ww, index=y_pred.index)[mask])
+            with np.errstate(divide='ignore', invalid='ignore'):
+                y_pred_demean = y_pred_sub - np.average(y_pred_sub, weights=ww_sub)
+                y_demean = y_sub - np.average(y_sub, weights=ww_sub)
+                corr = ((np.sum(ww_sub * y_pred_demean * y_demean) / np.sum(ww_sub)) / np.sqrt((np.sum(ww_sub * y_pred_demean ** 2) * np.sum(ww_sub * y_demean ** 2)) / (np.sum(ww_sub) ** 2)))
+                corrs.append(corr)
     return pd.Series(corrs)
     # if np.isfinite(corr):
     #     return np.abs(corr)
