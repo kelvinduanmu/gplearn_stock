@@ -125,9 +125,9 @@ def _weighted_pearson(y, y_pred, ww):
 
 def _weighted_spearman(y, y_pred, w):
     """Calculate the weighted Spearman correlation coefficient."""
-    y_pred_ranked = np.apply_along_axis(rankdata, 0, y_pred)
-    y_ranked = np.apply_along_axis(rankdata, 0, y)
-    return _weighted_pearson(y_pred_ranked, y_ranked, w)
+    y_pred_ranked = y_pred.rank()
+    y_ranked = y.rank()
+    return _weighted_pearson(y_ranked, y_pred_ranked, w)
 
 def _weighted_spearman_icir(y, y_pred, w):
     """Calculate the weighted Spearman correlation coefficient icir."""
