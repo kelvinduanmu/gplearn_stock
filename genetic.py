@@ -70,7 +70,7 @@ def _parallel_evolve(n_programs, parents, X, y, sample_weight, seeds, params):
     # Build programs
     programs = []
     for i in range(n_programs):
-        print (i)
+        # print (i)
         tt = time()
         # 随机选择一个数据，用于判断进化向那个方向进行
         random_state = check_random_state(seeds[i])
@@ -575,17 +575,18 @@ class BaseSymbolic(BaseEstimator, metaclass=ABCMeta):
                 self._program = self._programs[-1][np.argmax(fitness)]
             else:
                 self._program = self._programs[-1][np.argmin(fitness)]
-        print (self._program,u'program')
+        # print (self._program,u'program')
         c = sorted(fitness)[-100:]
         d = sorted(fitness)[0:20]
         qq = 0
         for i in c:
-            print (i)
-            if self._programs[-1][fitness.index(i)]==qq:
+            # print (i)
+            ind = np.where(fitness == i)[0][0]
+            if self._programs[-1][ind]==qq:
                 pass
             else:
-                qq = self._programs[-1][fitness.index(i)]
-                print (qq)
+                qq = self._programs[-1][ind]
+                # print (qq)
         return self
 
 
