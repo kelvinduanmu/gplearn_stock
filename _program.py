@@ -372,7 +372,7 @@ class _Program(object):
         node = self.program[0]
         if isinstance(node, float):
             #print(time() -t,u'no1')
-            return np.repeat(node, XX.shape[0])
+            return pd.Series([node] * XX.shape[0], index=XX.index)
         if isinstance(node, int):
             #print (time()-t,u'no2')
             return XX.iloc[:, node]
@@ -411,8 +411,8 @@ class _Program(object):
         X:股票的因子序列
         Y:给定的适应度情况
         '''
-        # import pdb; pdb.set_trace()
-        return self.execute(x).unstack()
+        x2 = self.execute(x)
+        return x2.unstack()
         
     def get_all_indices(self, n_samples=None, max_samples=None,
                         random_state=None):
