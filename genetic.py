@@ -538,6 +538,7 @@ class BaseSymbolic(BaseEstimator, metaclass=ABCMeta):
             # input()
         if isinstance(self, TransformerMixin):
             # Find the best individuals in the final generation
+            # import pdb; pdb.set_trace()
             fitness = np.array(fitness)
             if self._metric.greater_is_better:
                 hall_of_fame = fitness.argsort()[::-1][:self.hall_of_fame]
@@ -554,10 +555,10 @@ class BaseSymbolic(BaseEstimator, metaclass=ABCMeta):
             np.fill_diagonal(correlations, 0.)
             components = list(range(self.hall_of_fame))
             indices = list(range(self.hall_of_fame))
+            # import pdb; pdb.set_trace()
             # Iteratively remove least fit individual of most correlated pair
             while len(components) > self.n_components:
-                most_correlated = np.unravel_index(np.argmax(correlations),
-                                                   correlations.shape)
+                most_correlated = np.unravel_index(np.argmax(correlations), correlations.shape)
                 # The correlation matrix is sorted by fitness, so identifying
                 # the least fit of the pair is simply getting the higher index
                 worst = max(most_correlated)
@@ -565,8 +566,8 @@ class BaseSymbolic(BaseEstimator, metaclass=ABCMeta):
                 indices.remove(worst)
                 correlations = correlations[:, indices][indices, :]
                 indices = list(range(len(components)))
-            self._best_programs = [self._programs[-1][i] for i in
-                                   hall_of_fame[components]]
+
+            self._best_programs = [self._programs[-1][i] for i in hall_of_fame[components]]
 
         else:
             # Find the best individual in the final generation
@@ -575,17 +576,18 @@ class BaseSymbolic(BaseEstimator, metaclass=ABCMeta):
             else:
                 self._program = self._programs[-1][np.argmin(fitness)]
         # print (self._program,u'program')
-        c = sorted(fitness)[-100:]
-        d = sorted(fitness)[0:20]
-        qq = 0
-        for i in c:
-            # print (i)
-            ind = np.where(fitness == i)[0][0]
-            if self._programs[-1][ind]==qq:
-                pass
-            else:
-                qq = self._programs[-1][ind]
-                # print (qq)
+        # import pdb; pdb.set_trace()
+        # ccc = sorted(fitness)[-100:]
+        # d = sorted(fitness)[0:20]
+        # qq = 0
+        # for i in ccc:
+        #     # print (i)
+        #     ind = np.where(fitness == i)[0][0]
+        #     if self._programs[-1][ind]==qq:
+        #         pass
+        #     else:
+        #         qq = self._programs[-1][ind]
+        #         # print (qq)
         return self
 
 
