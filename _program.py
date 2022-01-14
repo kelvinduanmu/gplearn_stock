@@ -9,7 +9,7 @@ computer program. It is used for creating and evolving programs used in the
 # Author: Trevor Stephens <trevorstephens.com>
 #
 # License: BSD 3 clause
-import line_profiler
+# import line_profiler
 import os 
 import sys
 from copy import copy
