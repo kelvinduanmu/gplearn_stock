@@ -24,6 +24,7 @@ from sklearn.base import RegressorMixin, TransformerMixin, ClassifierMixin
 from sklearn.exceptions import NotFittedError
 from sklearn.utils.validation import check_X_y, check_array
 from sklearn.utils.multiclass import check_classification_targets
+# import pandas as pd
 
 from ._program import _Program
 from .fitness import _fitness_map, _Fitness
@@ -538,24 +539,32 @@ class BaseSymbolic(BaseEstimator, metaclass=ABCMeta):
             # input()
         if isinstance(self, TransformerMixin):
             # Find the best individuals in the final generation
-            # import pdb; pdb.set_trace()
             fitness = np.array(fitness)
             if self._metric.greater_is_better:
                 hall_of_fame = fitness.argsort()[::-1][:self.hall_of_fame]
             else:
                 hall_of_fame = fitness.argsort()[:self.hall_of_fame]
+            nan_mask = np.arange(fitness.shape[0])[np.isnan(fitness)]
+            hall_of_fame = hall_of_fame[~np.isin(hall_of_fame, nan_mask)]
+            hall_of_fame = np.concatenate([hall_of_fame, nan_mask])
             evaluation = np.array([gp.execute(X) for gp in
                                    [self._programs[-1][i] for
                                     i in hall_of_fame]])
-            if self.metric == 'spearman':
-                evaluation = np.apply_along_axis(rankdata, 1, evaluation)
+            if self.metric == 'spearman_icir':
+                evaluation_sub = X.iloc[:,[0]].copy()
+                evaluation_sub[0] = 0
+                evaluation_sub.drop(evaluation_sub.columns[0], axis=1, inplace=True)
+                for i in range(evaluation.shape[0]):
+                    evaluation_sub[0] = evaluation[i]
+                    evaluation_out = evaluation_sub.groupby(level=1).rank(pct=True)
+                    evaluation[i] = evaluation_out[0]
+                # evaluation = np.apply_along_axis(rankdata, 1, evaluation)
 
             with np.errstate(divide='ignore', invalid='ignore'):
                 correlations = np.abs(np.corrcoef(evaluation))
             np.fill_diagonal(correlations, 0.)
             components = list(range(self.hall_of_fame))
             indices = list(range(self.hall_of_fame))
-            # import pdb; pdb.set_trace()
             # Iteratively remove least fit individual of most correlated pair
             while len(components) > self.n_components:
                 most_correlated = np.unravel_index(np.argmax(correlations), correlations.shape)

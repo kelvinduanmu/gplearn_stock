@@ -134,7 +134,7 @@ def _weighted_spearman(y, y_pred, w):
 def _weighted_spearman_icir(y, y_pred, w):
     """Calculate the weighted Spearman correlation coefficient icir."""
     corrs = _weighted_spearman(y, y_pred, w)
-    return corrs.mean() / corrs.std()
+    return abs(corrs.mean()) / corrs.std()
 
 def _mean_absolute_error(y, y_pred, w):
     """Calculate the mean absolute error."""
