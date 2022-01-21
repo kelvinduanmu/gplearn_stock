@@ -37,13 +37,20 @@ class _Function(object):
 
     """
 
-    def __init__(self, function, name, arity):
+    def __init__(self, function, name, arity, ts=False):
         self.function = function
         self.name = name
         self.arity = arity
+        self.ts = ts
 
     def __call__(self, *args):
+        if self.ts:
+            args = list(args)
+            args.append(self.d1)
         return self.function(*args)
+
+    def set_d1(self, d1):
+        self.d1 = d1
 
 
 def make_function(function, name, arity, wrap=True):
@@ -148,7 +155,16 @@ def _sigmoid(x1):
     with np.errstate(over='ignore', under='ignore'):
         return 1 / (1 + np.exp(-x1))
 
+def _rank_cross(x1):
+    return x1.groupby(level=1).rank(pct=True)
 
+def _rank(x1, d1):
+    d1 = max(3, d1)
+    y1 = x1.sort_index().groupby(level=0).rolling(d1).apply(lambda x: (x<x.iloc[-1]).sum()/x.shape[0])
+    return y1.droplevel(0)
+
+
+# fundamental functions
 add2 = _Function(function=np.add, name='add', arity=2)
 sub2 = _Function(function=np.subtract, name='sub', arity=2)
 mul2 = _Function(function=np.multiply, name='mul', arity=2)
@@ -165,6 +181,12 @@ cos1 = _Function(function=np.cos, name='cos', arity=1)
 tan1 = _Function(function=np.tan, name='tan', arity=1)
 sig1 = _Function(function=_sigmoid, name='sig', arity=1)
 
+# cross-sectional functions
+rank_cross = _Function(function=_rank_cross, name='rkc', arity=1)
+
+# time-series functions
+rank = _Function(function=_rank, name='rnk', arity=1, ts=True)
+
 _function_map = {'add': add2,
                  'sub': sub2,
                  'mul': mul2,
@@ -178,4 +200,7 @@ _function_map = {'add': add2,
                  'min': min2,
                  'sin': sin1,
                  'cos': cos1,
-                 'tan': tan1}
+                 'tan': tan1,
+                 'sig': sig1,
+                 'rkc': rank_cross,
+                 'rnk': rank}

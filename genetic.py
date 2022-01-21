@@ -56,6 +56,7 @@ def _parallel_evolve(n_programs, parents, X, y, sample_weight, seeds, params):
     p_point_replace = params['p_point_replace']
     max_samples = params['max_samples']
     feature_names = params['feature_names']
+    n_history = params['n_history']
 
     max_samples = int(max_samples * n_samples)
     def _tournament():
@@ -70,6 +71,7 @@ def _parallel_evolve(n_programs, parents, X, y, sample_weight, seeds, params):
 
     # Build programs
     programs = []
+    # import pdb; pdb.set_trace()
     for i in range(n_programs):
         # print (i)
         tt = time()
@@ -121,7 +123,7 @@ def _parallel_evolve(n_programs, parents, X, y, sample_weight, seeds, params):
         #print (function_set)
         #input()
         # import pdb; pdb.set_trace()
-        program = _Program(function_set=function_set, arities=arities, init_depth=init_depth, init_method=init_method, n_features=n_features, metric=metric, transformer=transformer, const_range=const_range, p_point_replace=p_point_replace, parsimony_coefficient=parsimony_coefficient, feature_names=feature_names, random_state=random_state, program=program)
+        program = _Program(function_set=function_set, arities=arities, init_depth=init_depth, init_method=init_method, n_features=n_features, metric=metric, transformer=transformer, const_range=const_range, p_point_replace=p_point_replace, parsimony_coefficient=parsimony_coefficient, feature_names=feature_names, random_state=random_state, program=program, n_history=n_history)
 
         program.parents = genome
         
@@ -140,7 +142,6 @@ def _parallel_evolve(n_programs, parents, X, y, sample_weight, seeds, params):
         oob_sample_weight[indices] = 0
         bb = time()
         #print (u'花费事假',time() - tt)
-        # import pdb; pdb.set_trace()
         program.raw_fitness_ = program.raw_fitness(X, y, curr_sample_weight)
         #print (u'这里时间',time()-bb)
         #a = time()
@@ -189,7 +190,8 @@ class BaseSymbolic(BaseEstimator, metaclass=ABCMeta):
                  low_memory=False,
                  n_jobs=1,
                  verbose=0,
-                 random_state=None):
+                 random_state=None,
+                 n_history=10):
 
         self.population_size = population_size
         self.hall_of_fame = hall_of_fame
@@ -216,6 +218,7 @@ class BaseSymbolic(BaseEstimator, metaclass=ABCMeta):
         self.n_jobs = n_jobs
         self.verbose = verbose
         self.random_state = random_state
+        self.n_history = n_history
 
     def _verbose_reporter(self, run_details=None):
         """A report of the progress of the evolution process.
@@ -419,6 +422,7 @@ class BaseSymbolic(BaseEstimator, metaclass=ABCMeta):
         params['function_set'] = self._function_set  # 加减乘除
         params['arities'] = self._arities
         params['method_probs'] = self._method_probs
+        params['n_history'] = self.n_history
 
         if not self.warm_start or not hasattr(self, '_programs'):
             # Free allocated memory, if any
@@ -772,6 +776,9 @@ class SymbolicRegressor(BaseSymbolic, RegressorMixin):
         If RandomState instance, random_state is the random number generator;
         If None, the random number generator is the RandomState instance used
         by `np.random`.
+
+    n_history : int, maximum look back window for time series function such as 
+        time series rank, time series correlation etc. 
 
     Attributes
     ----------
@@ -1408,7 +1415,8 @@ class SymbolicTransformer(BaseSymbolic, TransformerMixin):
                  low_memory=False,
                  n_jobs=1,
                  verbose=0,
-                 random_state=None):
+                 random_state=None,
+                 n_history=10):
         super(SymbolicTransformer, self).__init__(
             population_size=population_size,
             hall_of_fame=hall_of_fame,
@@ -1433,7 +1441,8 @@ class SymbolicTransformer(BaseSymbolic, TransformerMixin):
             low_memory=low_memory,
             n_jobs=n_jobs,
             verbose=verbose,
-            random_state=random_state)
+            random_state=random_state,
+            n_history=n_history)
 
     def __len__(self):
         """Overloads `len` output to be the number of fitted components."""

@@ -135,6 +135,7 @@ class _Program(object):
                  p_point_replace,
                  parsimony_coefficient,
                  random_state,
+                 n_history,
                  transformer=None,
                  feature_names=None,
                  program=None):
@@ -151,6 +152,7 @@ class _Program(object):
         self.transformer = transformer
         self.feature_names = feature_names
         self.program = program
+        self.n_history = n_history
 
         if self.program is not None:
             if not self.validate_program():
@@ -207,6 +209,9 @@ class _Program(object):
                 #print ('here1')                        
                 function = random_state.randint(len(self.function_set))
                 function = self.function_set[function]
+                if function.ts:
+                    d1 = random_state.randint(self.n_history + 1)
+                    function.set_d1(d1)
                 program.append(function)
                 terminal_stack.append(function.arity)
             else:
@@ -378,7 +383,7 @@ class _Program(object):
             return XX.iloc[:, node]
         
         apply_stack = []
-        
+
         for node in self.program:
             if isinstance(node, _Function):
                 apply_stack.append([node])
@@ -387,11 +392,9 @@ class _Program(object):
                 apply_stack[-1].append(node)
            
             while len(apply_stack[-1]) == apply_stack[-1][0].arity + 1:
-                # import pdb; pdb.set_trace()
                 function = apply_stack[-1][0]
                 terminals = [pd.Series([t] * XX.shape[0], index=XX.index) if isinstance(t, float) else XX.loc[:, XX.columns[t]] if isinstance(t, int) else t for t in apply_stack[-1][1:]]
                 # terminals = [np.repeat(t, XX.shape[0]) if isinstance(t, float) else XX.loc[:, XX.columns[t]] if isinstance(t, int) else t for t in apply_stack[-1][1:]]
-
                 intermediate_result = function(*terminals)
                 if len(apply_stack) != 1:
                     apply_stack.pop()
