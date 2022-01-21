@@ -10,6 +10,7 @@ own custom functions.
 # License: BSD 3 clause
 
 import numpy as np
+import pandas as pd
 from joblib import wrap_non_picklable_objects
 
 __all__ = ['make_function']
@@ -44,6 +45,7 @@ class _Function(object):
         self.ts = ts
 
     def __call__(self, *args):
+        # args = [ele.sort_index() for ele in args]
         if self.ts:
             args = list(args)
             args.append(self.d1)
@@ -163,6 +165,18 @@ def _rank(x1, d1):
     y1 = x1.sort_index().groupby(level=0).rolling(d1).apply(lambda x: (x<x.iloc[-1]).sum()/x.shape[0])
     return y1.droplevel(0)
 
+def _delay(x1, d1):
+    y1 = x1.sort_index().groupby(level=0).shift(d1)
+    return y1.droplevel(0)
+
+def _ts_corr(x1, y1, d1):
+    d1 = max(3, d1)
+    comb_data = pd.concat([x1, y1], axis=1).unstack()
+    result = pd.Series(index=x1.index).unstack(level=0)
+    for code in comb_data.index:
+        result[code] = comb_data.loc[code].unstack(level=0).rolling(d1).corr().drop(x1.name, level=1).droplevel(1)[x1.name]
+    return result.stack().swaplevel(0,1).sort_index()
+
 
 # fundamental functions
 add2 = _Function(function=np.add, name='add', arity=2)
@@ -186,6 +200,8 @@ rank_cross = _Function(function=_rank_cross, name='rkc', arity=1)
 
 # time-series functions
 rank = _Function(function=_rank, name='rnk', arity=1, ts=True)
+delay = _Function(function=_delay, name='sft', arity=1, ts=True)
+ts_corr = _Function(function=_ts_corr, name='cor', arity=2, ts=True)
 
 _function_map = {'add': add2,
                  'sub': sub2,
@@ -203,4 +219,6 @@ _function_map = {'add': add2,
                  'tan': tan1,
                  'sig': sig1,
                  'rkc': rank_cross,
-                 'rnk': rank}
+                 'rnk': rank,
+                 'sft': delay,
+                 'cor': ts_corr}
