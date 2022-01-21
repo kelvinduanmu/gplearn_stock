@@ -125,10 +125,11 @@ def _weighted_pearson(y, y_pred, ww):
     # return 0.
 
 
-def _weighted_spearman(y, y_pred, w):
+def _weighted_spearman(yy, y_pred, w):
     """Calculate the weighted Spearman correlation coefficient."""
     y_pred_ranked = y_pred.rank()
-    y_ranked = y.rank()
+    yy = yy.copy()
+    y_ranked = yy.rank()
     return _weighted_pearson(y_ranked, y_pred_ranked, w)
 
 def _weighted_spearman_icir(y, y_pred, w):
