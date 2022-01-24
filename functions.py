@@ -45,7 +45,7 @@ class _Function(object):
         self.ts = ts
 
     def __call__(self, *args):
-        # args = [ele.sort_index() for ele in args]
+        args = [ele.sort_index() for ele in args]
         if self.ts:
             args = list(args)
             args.append(self.d1)
@@ -174,7 +174,7 @@ def _ts_corr(x1, y1, d1):
     comb_data = pd.concat([x1, y1], axis=1).unstack()
     result = pd.Series(index=x1.index).unstack(level=0)
     for code in comb_data.index:
-        result[code] = comb_data.loc[code].unstack(level=0).rolling(d1).corr().drop(x1.name, level=1).droplevel(1)[x1.name]
+        result[code] = comb_data.loc[code].unstack(level=0).rolling(d1).corr().drop(comb_data.columns.levels[0][0], level=1).droplevel(1)[comb_data.columns.levels[0][0]]
     return result.stack().swaplevel(0,1).sort_index()
 
 
