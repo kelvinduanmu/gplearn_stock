@@ -45,15 +45,15 @@ class _Function(object):
         self.ts = ts
 
     def __call__(self, *args):
+        args2 = []
         for ele in args:
             if ele.index.nlevels != 2:
                 print("Input should have 2 levels of index")
                 raise
-            ele.sort_index(inplace=True)
+            args2.append(ele.sort_index())
         if self.ts:
-            args = list(args)
-            args.append(self.d1)
-        return self.function(*args)
+            args2.append(self.d1)
+        return self.function(*args2)
 
     def set_d1(self, d1):
         self.d1 = d1
