@@ -45,7 +45,11 @@ class _Function(object):
         self.ts = ts
 
     def __call__(self, *args):
-        args = [ele.sort_index() for ele in args]
+        for ele in args:
+            if ele.index.nlevels != 2:
+                print("Input should have 2 levels of index")
+                raise
+            ele.sort_index(inplace=True)
         if self.ts:
             args = list(args)
             args.append(self.d1)
@@ -167,7 +171,7 @@ def _rank(x1, d1):
 
 def _delay(x1, d1):
     y1 = x1.sort_index().groupby(level=0).shift(d1)
-    return y1.droplevel(0)
+    return y1
 
 def _ts_corr(x1, y1, d1):
     d1 = max(3, d1)
