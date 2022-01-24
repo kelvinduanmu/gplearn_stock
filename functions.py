@@ -200,11 +200,11 @@ tan1 = _Function(function=np.tan, name='tan', arity=1)
 sig1 = _Function(function=_sigmoid, name='sig', arity=1)
 
 # cross-sectional functions
-rank_cross = _Function(function=_rank_cross, name='rkc', arity=1)
+rank_cross = _Function(function=_rank_cross, name='rank_cross', arity=1)
 
 # time-series functions
-rank = _Function(function=_rank, name='rnk', arity=1, ts=True)
-delay = _Function(function=_delay, name='sft', arity=1, ts=True)
+rank = _Function(function=_rank, name='rank_ts', arity=1, ts=True)
+delay = _Function(function=_delay, name='delay', arity=1, ts=True)
 ts_corr = _Function(function=_ts_corr, name='cor', arity=2, ts=True)
 
 _function_map = {'add': add2,
