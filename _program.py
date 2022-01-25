@@ -679,6 +679,9 @@ class _Program(object):
 
         for node in mutate:
             if isinstance(program[node], _Function):
+                if program[node].ts:
+                    d1 = random_state.randint(self.n_history + 1)
+                    program[node].set_d1(d1)                
                 arity = program[node].arity
                 # Find a valid replacement with same arity
                 replacement = len(self.arities[arity])
