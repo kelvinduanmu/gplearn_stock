@@ -679,14 +679,14 @@ class _Program(object):
 
         for node in mutate:
             if isinstance(program[node], _Function):
-                if program[node].ts:
-                    d1 = random_state.randint(self.n_history + 1)
-                    program[node].set_d1(d1)                
                 arity = program[node].arity
                 # Find a valid replacement with same arity
                 replacement = len(self.arities[arity])
                 replacement = random_state.randint(replacement)
                 replacement = self.arities[arity][replacement]
+                if replacement.ts:
+                    d1 = random_state.randint(self.n_history + 1)
+                    replacement.set_d1(d1)                
                 program[node] = replacement
             else:
                 # We've got a terminal, add a const or variable

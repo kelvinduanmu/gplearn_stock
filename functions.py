@@ -201,6 +201,11 @@ def _decay_linear(x1, d1):
     y1 = x1.unstack(level=0).rolling(d1).apply(lambda x: (x*np.arange(1,d1+1)).sum()/np.arange(1, d1+1).sum(), raw=True)
     return result.stack().swaplevel(0,1)
 
+def _decay_exp(x1, d1):
+    d1 = max(3, d1)
+    y1 = x1.unstack(level=0).rolling(d1).apply(lambda x: (x*np.exp(-np.arange(d1-1,-1,-1)/1/4)).sum()/np.exp(-np.arange(d1-1,-1,-1)/1/4).sum(), raw=True)
+    return result.stack().swaplevel(0,1)    
+
 # fundamental functions
 add2 = _Function(function=np.add, name='add', arity=2)
 sub2 = _Function(function=np.subtract, name='sub', arity=2)
@@ -229,6 +234,7 @@ ts_corr = _Function(function=_ts_corr, name='cor', arity=2, ts=True)
 ts_cov = _Function(function=_ts_cov, name='cov', arity=2, ts=True)
 delta = _Function(function=_delta, name='delta', arity=1, ts=True)
 decay_linear = _Function(function=_decay_linear, name='decay_linear', arity=1, ts=True)
+decay_exp = _Function(function=_decay_exp, name='decay_exp', arity=1, ts=True)
 
 _function_map = {'add': add2,
                  'sub': sub2,
@@ -252,4 +258,5 @@ _function_map = {'add': add2,
                  'cov': ts_cov,
                  'scl': scale,
                  'dif': delta,
-                 'dcl': decay_linear}
+                 'dcl': decay_linear,
+                 'dce': decay_exp}
