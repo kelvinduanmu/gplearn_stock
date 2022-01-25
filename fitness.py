@@ -106,9 +106,10 @@ def make_fitness(function, greater_is_better, wrap=True):
 def _weighted_pearson(y, y_pred, ww):
     """Calculate the weighted Pearson correlation coefficient."""
     corrs = []
-    for i in range(y.shape[1]):
-        y_pred_sub = y_pred.iloc[:, i].dropna()
-        y_sub = y.iloc[:, i].dropna()
+    avail_dates = y.columns.intersection(y_pred.columns)
+    for dt in avail_dates:
+        y_pred_sub = y_pred[dt].dropna()
+        y_sub = y[dt].dropna()
         mask = y_pred_sub.index.intersection(y_sub.index)
         if len(mask):
             y_pred_sub = y_pred_sub.loc[mask].values

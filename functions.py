@@ -166,11 +166,11 @@ def _rank_cross(x1):
 
 def _rank(x1, d1):
     d1 = max(3, d1)
-    y1 = x1.sort_index().groupby(level=0).rolling(d1).apply(lambda x: (x<x.iloc[-1]).sum()/x.shape[0])
+    y1 = x1.groupby(level=0).rolling(d1).apply(lambda x: (x<x.iloc[-1]).sum()/x.shape[0])
     return y1.droplevel(0)
 
 def _delay(x1, d1):
-    y1 = x1.sort_index().groupby(level=0).shift(d1)
+    y1 = x1.groupby(level=0).shift(d1)
     return y1
 
 def _ts_corr(x1, y1, d1):
@@ -179,8 +179,27 @@ def _ts_corr(x1, y1, d1):
     result = pd.Series(index=x1.index).unstack(level=0)
     for code in comb_data.index:
         result[code] = comb_data.loc[code].unstack(level=0).rolling(d1).corr().drop(comb_data.columns.levels[0][0], level=1).droplevel(1)[comb_data.columns.levels[0][0]]
-    return result.stack().swaplevel(0,1).sort_index()
+    return result.stack().swaplevel(0,1)
 
+def _ts_cov(x1, y1, d1):
+    d1 = max(3, d1)
+    comb_data = pd.concat([x1, y1], axis=1).unstack()
+    result = pd.Series(index=x1.index).unstack(level=0)
+    for code in comb_data.index:
+        result[code] = comb_data.loc[code].unstack(level=0).rolling(d1).cov().drop(comb_data.columns.levels[0][0], level=1).droplevel(1)[comb_data.columns.levels[0][0]]
+    return result.stack().swaplevel(0,1)
+
+def _scale(x1):
+    return x1 / x1.abs().groupby(level=1).sum()
+
+def _delta(x1, d1):
+    y1 = x1.groupby(level=0).diff(d1)
+    return y1
+
+def _decay_linear(x1, d1):
+    d1 = max(3, d1)
+    y1 = x1.unstack(level=0).rolling(d1).apply(lambda x: (x*np.arange(1,d1+1)).sum()/np.arange(1, d1+1).sum(), raw=True)
+    return result.stack().swaplevel(0,1)
 
 # fundamental functions
 add2 = _Function(function=np.add, name='add', arity=2)
@@ -200,12 +219,16 @@ tan1 = _Function(function=np.tan, name='tan', arity=1)
 sig1 = _Function(function=_sigmoid, name='sig', arity=1)
 
 # cross-sectional functions
-rank_cross = _Function(function=_rank_cross, name='rank_cross', arity=1)
+rank_cross = _Function(function=_rank_cross, name='rank', arity=1)
+scale = _Function(function=_scale, name='scale', arity=1)
 
 # time-series functions
 rank = _Function(function=_rank, name='rank_ts', arity=1, ts=True)
 delay = _Function(function=_delay, name='delay', arity=1, ts=True)
 ts_corr = _Function(function=_ts_corr, name='cor', arity=2, ts=True)
+ts_cov = _Function(function=_ts_cov, name='cov', arity=2, ts=True)
+delta = _Function(function=_delta, name='delta', arity=1, ts=True)
+decay_linear = _Function(function=_decay_linear, name='decay_linear', arity=1, ts=True)
 
 _function_map = {'add': add2,
                  'sub': sub2,
@@ -225,4 +248,8 @@ _function_map = {'add': add2,
                  'rkc': rank_cross,
                  'rnk': rank,
                  'sft': delay,
-                 'cor': ts_corr}
+                 'cor': ts_corr,
+                 'cov': ts_cov,
+                 'scl': scale,
+                 'dif': delta,
+                 'dcl': decay_linear}
