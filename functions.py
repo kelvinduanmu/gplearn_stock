@@ -50,6 +50,8 @@ class _Function(object):
             if ele.index.nlevels != 2:
                 print("Input should have 2 levels of index")
                 raise
+            if ele.shape[0] == 0:
+                return ele
             args2.append(ele.sort_index())
         if self.ts:
             args2.append(self.d1)

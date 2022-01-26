@@ -194,6 +194,9 @@ class _Program(object):
         function = random_state.randint(len(self.function_set))
         # 随机选择一个加减乘除的方法
         function = self.function_set[function]
+        if function.ts:
+            d1 = random_state.randint(self.n_history + 1)
+            function.set_d1(d1)        
         #print (function)
         
         program = [function]
@@ -686,7 +689,7 @@ class _Program(object):
                 replacement = self.arities[arity][replacement]
                 if replacement.ts:
                     d1 = random_state.randint(self.n_history + 1)
-                    replacement.set_d1(d1)                
+                    replacement.set_d1(d1)
                 program[node] = replacement
             else:
                 # We've got a terminal, add a const or variable
