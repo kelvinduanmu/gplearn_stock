@@ -208,6 +208,62 @@ def _decay_exp(x1, d1):
     y1 = x1.unstack(level=0).rolling(d1).apply(lambda x: (x*np.exp(-np.arange(d1-1,-1,-1)/1/4)).sum()/np.exp(-np.arange(d1-1,-1,-1)/1/4).sum(), raw=True)
     return y1.stack().swaplevel(0,1)    
 
+# 返回值为向量，过去d天的最小值————时序函数
+def _ts_min(X1,d1):
+    d1=max(3,d1)
+    y1=X1.groupby(level=0).rolling(d1,min_periods=1).min()
+    y1=y1.droplevel(0)
+    # y1.sort_index(level=1,inplace=True)
+    return y1
+
+# 返回值为向量，过去d天的最小值————时序函数
+def _ts_max(X1,d1):
+    d1=max(3,d1)
+    y1=X1.groupby(level=0).rolling(d1,min_periods=1).max()
+    y1=y1.droplevel(0)
+    # y1.sort_index(level=1,inplace=True)
+    return y1
+
+# 注：数据量大的时候，速度很慢
+# 返回值为向量，过去d天的最小值的位置————时序函数
+# 使用了pandas自带的argmin和argmax
+def _ts_argmin(X1,d1):
+    d1=max(3,d1)
+    y1=X1.groupby(level=0).rolling(d1,min_periods=1).agg(lambda x:x.argmin())
+    y1=y1.droplevel(0)
+    # y1.sort_index(level=1,inplace=True)
+    return y1
+
+def _ts_argmax(X1,d1):
+    d1=max(3,d1)
+    y1=X1.groupby(level=0).rolling(d1,min_periods=1).agg(lambda x:x.argmax())
+    y1=y1.droplevel(0)
+    # y1.sort_index(level=1,inplace=True)
+    return y1
+
+def _ts_sum(X1,d1):
+    d1=max(3,d1)
+    y1= X1.groupby(level=0).rolling(d1,min_periods=1).sum()
+    y1=y1.droplevel(0)
+    # y1.sort_index(level=1,inplace=True)
+    return y1
+
+def _ts_product(X1,d1):
+    d1=max(3,d1)
+    y1=X1.groupby(level=0).rolling(d1,min_periods=1).apply(lambda x:x.product())
+    y1=y1.droplevel(0)
+    # y1.sort_index(level=1,inplace=True)
+    return y1
+
+def _ts_stddev(X1,d1):
+    d1=max(3,d1)
+    y1=X1.groupby(level=0).rolling(d1,min_periods=1).apply(lambda x:x.std())
+    y1=y1.fillna(0)
+    y1=y1.droplevel(0)
+    # y1.sort_index(level=1,inplace=True)
+    return y1
+
+
 # fundamental functions
 add2 = _Function(function=np.add, name='add', arity=2)
 sub2 = _Function(function=np.subtract, name='sub', arity=2)
@@ -237,6 +293,21 @@ ts_cov = _Function(function=_ts_cov, name='cov', arity=2, ts=True)
 delta = _Function(function=_delta, name='delta', arity=1, ts=True)
 decay_linear = _Function(function=_decay_linear, name='decay_linear', arity=1, ts=True)
 decay_exp = _Function(function=_decay_exp, name='decay_exp', arity=1, ts=True)
+ts_min = _Function(function=_ts_min, name='ts_min', arity=1, ts=True)
+ts_max = _Function(function=_ts_max, name='ts_max', arity=1, ts=True)
+ts_argmin = _Function(function=_ts_argmin, name='ts_argmin', arity=1, ts=True)
+ts_argmax = _Function(function=_ts_argmax, name='ts_argmax', arity=1, ts=True)
+ts_sum = _Function(function=_ts_sum, name='ts_sum', arity=1, ts=True)
+ts_product = _Function(function=_ts_product, name='ts_product', arity=1, ts=True)
+ts_stddev = _Function(function=_ts_stddev, name='ts_stddev', arity=1, ts=True)
+
+
+
+
+
+
+
+
 
 _function_map = {'add': add2,
                  'sub': sub2,
@@ -261,4 +332,11 @@ _function_map = {'add': add2,
                  'scl': scale,
                  'dif': delta,
                  'dcl': decay_linear,
-                 'dce': decay_exp}
+                 'dce': decay_exp,
+                 'ts_min': ts_min,
+                 'ts_max': ts_max,
+                 'ts_argmin': ts_argmin,
+                 'ts_argmax': ts_argmax,
+                 'sum': ts_sum,
+                 'product': ts_product,
+                 'std': ts_stddev}
