@@ -282,6 +282,7 @@ class BaseSymbolic(BaseEstimator, metaclass=ABCMeta):
             Returns self.
 
         """
+        y = y.unstack()
         random_state = check_random_state(self.random_state)
 
         # Check arrays
