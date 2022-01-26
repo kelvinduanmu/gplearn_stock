@@ -201,12 +201,12 @@ def _delta(x1, d1):
 def _decay_linear(x1, d1):
     d1 = max(3, d1)
     y1 = x1.unstack(level=0).rolling(d1).apply(lambda x: (x*np.arange(1,d1+1)).sum()/np.arange(1, d1+1).sum(), raw=True)
-    return result.stack().swaplevel(0,1)
+    return y1.stack().swaplevel(0,1)
 
 def _decay_exp(x1, d1):
     d1 = max(3, d1)
     y1 = x1.unstack(level=0).rolling(d1).apply(lambda x: (x*np.exp(-np.arange(d1-1,-1,-1)/1/4)).sum()/np.exp(-np.arange(d1-1,-1,-1)/1/4).sum(), raw=True)
-    return result.stack().swaplevel(0,1)    
+    return y1.stack().swaplevel(0,1)    
 
 # fundamental functions
 add2 = _Function(function=np.add, name='add', arity=2)
