@@ -563,10 +563,11 @@ class BaseSymbolic(BaseEstimator, metaclass=ABCMeta):
                     evaluation_sub[0] = evaluation[i]
                     evaluation_out = evaluation_sub.groupby(level=1).rank(pct=True)
                     evaluation[i] = evaluation_out[0]
+                evaluation = pd.concat(evaluation, axis=1)
                 # evaluation = np.apply_along_axis(rankdata, 1, evaluation)
 
             with np.errstate(divide='ignore', invalid='ignore'):
-                correlations = np.abs(np.corrcoef(evaluation))
+                correlations = np.abs(evaluation.corr()).values
             np.fill_diagonal(correlations, 0.)
             components = list(range(self.hall_of_fame))
             indices = list(range(self.hall_of_fame))
