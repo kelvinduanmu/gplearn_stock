@@ -133,10 +133,18 @@ def _weighted_spearman(yy, y_pred, w):
     y_ranked = yy.rank()
     return _weighted_pearson(y_ranked, y_pred_ranked, w)
 
-def _weighted_spearman_icir(y, y_pred, w):
+def _weighted_spearman_icir(y, y_pred, w, min_size=10, max_res=1000, err_res=-10):
     """Calculate the weighted Spearman correlation coefficient icir."""
     corrs = _weighted_spearman(y, y_pred, w)
-    return abs(corrs.mean()) / corrs.std()
+    res1 = abs(corrs.mean()) / corrs.std()
+    
+    if len(corrs) <= min_size:
+        return err_res
+
+    if np.isnan(res1) or res1 > max_res:
+        return err_res
+
+    return res1
 
 def _mean_absolute_error(y, y_pred, w):
     """Calculate the mean absolute error."""
