@@ -60,6 +60,8 @@ class _Function(object):
     def set_d1(self, d1):
         self.d1 = d1
 
+    def set_d1_list(self, d1_list):
+        self.d1_list = d1_list
 
 def make_function(function, name, arity, wrap=True):
     """Make a function node, a representation of a mathematical relationship.

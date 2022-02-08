@@ -330,7 +330,14 @@ class BaseSymbolic(BaseEstimator, metaclass=ABCMeta):
         self._function_set = []
         for function in self.function_set:
             #print (function)
-            if isinstance(function, str):
+            if isinstance(function, tuple) and isinstance(function[0], str):
+                if function[0] not in _function_map:
+                    raise ValueError('invalid function name %s found in '
+                                     '`function_set`.' % function[0])
+                to_append = _function_map[function[0]]
+                to_append.set_d1_list(function[1])
+                self._function_set.append(to_append)
+            elif isinstance(function, str):
                 if function not in _function_map:
                     raise ValueError('invalid function name %s found in '
                                      '`function_set`.' % function)

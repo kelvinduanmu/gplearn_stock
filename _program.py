@@ -197,7 +197,7 @@ class _Program(object):
         # 随机选择一个加减乘除的方法
         function = self.function_set[function]
         if function.ts:
-            d1 = random_state.randint(self.n_history + 1)
+            d1 = random_state.choice(function.d1_list)
             function.set_d1(d1)        
         #print (function)
         
@@ -215,7 +215,7 @@ class _Program(object):
                 function = random_state.randint(len(self.function_set))
                 function = self.function_set[function]
                 if function.ts:
-                    d1 = random_state.randint(self.n_history + 1)
+                    d1 = random_state.choice(function.d1_list)
                     function.set_d1(d1)
                 program.append(function)
                 terminal_stack.append(function.arity)
@@ -265,7 +265,10 @@ class _Program(object):
             #print (u'i',i,u'node','node')
             if isinstance(node, _Function):
                 terminals.append(node.arity)
-                output += node.name + '('
+                node_name = node.name
+                if node.ts:
+                    node_name += '_{}'.format(node.d1)
+                output += node_name + '('
             else:
                 if isinstance(node, int):
                     if self.feature_names is None:
@@ -692,7 +695,8 @@ class _Program(object):
                 replacement = random_state.randint(replacement)
                 replacement = self.arities[arity][replacement]
                 if replacement.ts:
-                    d1 = random_state.randint(self.n_history + 1)
+                    # d1 = random_state.randint(self.n_history + 1)
+                    d1 = random_state.choice(replacement.d1_list)
                     replacement.set_d1(d1)
                 program[node] = replacement
             else:
