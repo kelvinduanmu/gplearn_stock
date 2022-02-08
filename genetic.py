@@ -17,6 +17,7 @@ from warnings import warn
 import gc
 
 import numpy as np
+import pandas as pd
 from joblib import Parallel, delayed
 from scipy.stats import rankdata
 from sklearn.base import BaseEstimator
@@ -57,6 +58,7 @@ def _parallel_evolve(n_programs, parents, X, y, sample_weight, seeds, params):
     max_samples = params['max_samples']
     feature_names = params['feature_names']
     n_history = params['n_history']
+    fitness_params = params['fitness_params']
 
     max_samples = int(max_samples * n_samples)
     def _tournament():
@@ -123,7 +125,7 @@ def _parallel_evolve(n_programs, parents, X, y, sample_weight, seeds, params):
         #print (function_set)
         #input()
         # import pdb; pdb.set_trace()
-        program = _Program(function_set=function_set, arities=arities, init_depth=init_depth, init_method=init_method, n_features=n_features, metric=metric, transformer=transformer, const_range=const_range, p_point_replace=p_point_replace, parsimony_coefficient=parsimony_coefficient, feature_names=feature_names, random_state=random_state, program=program, n_history=n_history)
+        program = _Program(function_set=function_set, arities=arities, init_depth=init_depth, init_method=init_method, n_features=n_features, metric=metric, transformer=transformer, const_range=const_range, p_point_replace=p_point_replace, parsimony_coefficient=parsimony_coefficient, feature_names=feature_names, random_state=random_state, program=program, n_history=n_history, fitness_params=fitness_params)
 
         program.parents = genome
         
@@ -219,6 +221,10 @@ class BaseSymbolic(BaseEstimator, metaclass=ABCMeta):
         self.verbose = verbose
         self.random_state = random_state
         self.n_history = n_history
+        self.fitness_params = {}
+
+    def set_fitness_parameters(self, params):
+        self.fitness_params = params
 
     def _verbose_reporter(self, run_details=None):
         """A report of the progress of the evolution process.
@@ -424,6 +430,7 @@ class BaseSymbolic(BaseEstimator, metaclass=ABCMeta):
         params['arities'] = self._arities
         params['method_probs'] = self._method_probs
         params['n_history'] = self.n_history
+        params['fitness_params'] = self.fitness_params
 
         if not self.warm_start or not hasattr(self, '_programs'):
             # Free allocated memory, if any
@@ -563,7 +570,7 @@ class BaseSymbolic(BaseEstimator, metaclass=ABCMeta):
                     evaluation_sub[0] = evaluation[i]
                     evaluation_out = evaluation_sub.groupby(level=1).rank(pct=True)
                     evaluation[i] = evaluation_out[0]
-                evaluation = pd.concat(evaluation, axis=1)
+                evaluation = pd.concat([pd.Series(ele) for ele in evaluation], axis=1)
                 # evaluation = np.apply_along_axis(rankdata, 1, evaluation)
 
             with np.errstate(divide='ignore', invalid='ignore'):

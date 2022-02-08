@@ -47,8 +47,8 @@ class _Fitness(object):
         self.greater_is_better = greater_is_better
         self.sign = 1 if greater_is_better else -1
 
-    def __call__(self, *args):
-        return self.function(*args)
+    def __call__(self, *args, **kargs):
+        return self.function(*args, **kargs)
 
 
 def make_fitness(function, greater_is_better, wrap=True):
@@ -137,7 +137,7 @@ def _weighted_spearman_icir(y, y_pred, w, min_size=10, max_res=1000, err_res=-10
     """Calculate the weighted Spearman correlation coefficient icir."""
     corrs = _weighted_spearman(y, y_pred, w)
     res1 = abs(corrs.mean()) / corrs.std()
-    
+
     if len(corrs) <= min_size:
         return err_res
 

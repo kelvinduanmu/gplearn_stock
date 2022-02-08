@@ -138,7 +138,8 @@ class _Program(object):
                  n_history,
                  transformer=None,
                  feature_names=None,
-                 program=None):
+                 program=None,
+                 fitness_params={}):
 
         self.function_set = function_set
         self.arities = arities
@@ -153,6 +154,7 @@ class _Program(object):
         self.feature_names = feature_names
         self.program = program
         self.n_history = n_history
+        self.fitness_params=fitness_params
 
         if self.program is not None:
             if not self.validate_program():
@@ -500,6 +502,8 @@ class _Program(object):
         if self.transformer:
             y_pred = self.transformer(y_pred)
         sample_weight = [1 for i in range(len(y_pred))]
+        if self.fitness_params:
+            raw_fitness = self.metric(y, y_pred, sample_weight, **self.fitness_params)
         raw_fitness = self.metric(y, y_pred, sample_weight)
         del X,y,y_pred
         gc.collect()
