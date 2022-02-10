@@ -504,7 +504,8 @@ class _Program(object):
             y_pred = self.stock_excute(X,y)
         if self.transformer:
             y_pred = self.transformer(y_pred)
-        sample_weight = [1 for i in range(len(y_pred))]
+        # sample_weight = [1 for i in range(len(y_pred))]
+        sample_weight = pd.Series(np.ones(len(y_pred)), index=y_pred.index)
         if self.fitness_params:
             raw_fitness = self.metric(y, y_pred, sample_weight, **self.fitness_params)
         raw_fitness = self.metric(y, y_pred, sample_weight)

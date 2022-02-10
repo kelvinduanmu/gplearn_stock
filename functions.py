@@ -269,6 +269,11 @@ def _ts_stddev(X1,d1):
     # y1.sort_index(level=1,inplace=True)
     return y1
 
+def _norm(x1):
+    return (x1 - x1.groupby(level=1).mean()) / x1.groupby(level=1).std()
+
+def _fill(x1):
+    return x1.fillna(0)
 
 # fundamental functions
 add2 = _Function(function=np.add, name='add', arity=2)
@@ -286,10 +291,12 @@ sin1 = _Function(function=np.sin, name='sin', arity=1)
 cos1 = _Function(function=np.cos, name='cos', arity=1)
 tan1 = _Function(function=np.tan, name='tan', arity=1)
 sig1 = _Function(function=_sigmoid, name='sig', arity=1)
+fillna0 = _Function(function=_fill, name='fill0', arity=1)
 
 # cross-sectional functions
 rank_cross = _Function(function=_rank_cross, name='rank', arity=1)
 scale = _Function(function=_scale, name='scale', arity=1)
+normalize = _Function(function=_norm, name='norm', arity=1)
 
 # time-series functions
 rank = _Function(function=_rank, name='rank_ts', arity=1, ts=True)
@@ -345,4 +352,6 @@ _function_map = {'add': add2,
                  'ts_argmax': ts_argmax,
                  'sum': ts_sum,
                  'product': ts_product,
-                 'std': ts_stddev}
+                 'std': ts_stddev,
+                 'norm': normalize,
+                 'fill0': fillna0}

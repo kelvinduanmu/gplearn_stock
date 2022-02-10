@@ -103,7 +103,7 @@ def make_fitness(function, greater_is_better, wrap=True):
                     greater_is_better=greater_is_better)
 
 
-def _weighted_pearson(y, y_pred, ww):
+def _weighted_pearson(y, y_pred, ww, decay=False):
     """Calculate the weighted Pearson correlation coefficient."""
     corrs = []
     avail_dates = y.columns.intersection(y_pred.columns)
@@ -112,9 +112,13 @@ def _weighted_pearson(y, y_pred, ww):
         y_sub = y[dt].dropna()
         mask = y_pred_sub.index.intersection(y_sub.index)
         if len(mask):
+            if decay:
+                decay_f = 0.5 ** (1 / y_sub.shape[0] / decay)
+                ww_sub = list(decay_f ** (y_pred_sub.loc[mask].rank(ascending=False) - 1))
+            else:
+                ww_sub = list(ww[mask])        
             y_pred_sub = y_pred_sub.loc[mask].values
             y_sub = y_sub.loc[mask].values
-            ww_sub = list(pd.Series(ww, index=y_pred.index)[mask])
             with np.errstate(divide='ignore', invalid='ignore'):
                 y_pred_demean = y_pred_sub - np.average(y_pred_sub, weights=ww_sub)
                 y_demean = y_sub - np.average(y_sub, weights=ww_sub)
@@ -126,16 +130,16 @@ def _weighted_pearson(y, y_pred, ww):
     # return 0.
 
 
-def _weighted_spearman(yy, y_pred, w):
+def _weighted_spearman(yy, y_pred, w, decay=False):
     """Calculate the weighted Spearman correlation coefficient."""
     y_pred_ranked = y_pred.rank()
     yy = yy.copy()
     y_ranked = yy.rank()
-    return _weighted_pearson(y_ranked, y_pred_ranked, w)
+    return _weighted_pearson(y_ranked, y_pred_ranked, w, decay)
 
-def _weighted_spearman_icir(y, y_pred, w, min_size=10, max_res=1000, err_res=-10):
+def _weighted_spearman_icir(y, y_pred, w, min_size=10, max_res=1000, err_res=-10, decay=False):
     """Calculate the weighted Spearman correlation coefficient icir."""
-    corrs = _weighted_spearman(y, y_pred, w)
+    corrs = _weighted_spearman(y, y_pred, w, decay)
     res1 = abs(corrs.mean()) / corrs.std()
 
     if len(corrs) <= min_size:
