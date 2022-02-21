@@ -369,7 +369,7 @@ class BaseSymbolic(BaseEstimator, metaclass=ABCMeta):
                 raise ValueError('Unsupported metric: %s' % self.metric)
             self._metric = _fitness_map[self.metric]
         elif isinstance(self, TransformerMixin):
-            if self.metric not in ('pearson', 'spearman_icir'):
+            if self.metric not in ('pearson', 'spearman_icir', 'long_only_sharpe', 'spearman_icir_mix'):
                 raise ValueError('Unsupported metric: %s' % self.metric)
             self._metric = _fitness_map[self.metric]
         if self.metric in ('stock_dedicate'):
@@ -566,14 +566,15 @@ class BaseSymbolic(BaseEstimator, metaclass=ABCMeta):
             nan_mask = np.arange(fitness.shape[0])[np.isnan(fitness)]
             hall_of_fame = hall_of_fame[~np.isin(hall_of_fame, nan_mask)]
             hall_of_fame = np.concatenate([hall_of_fame, nan_mask])
-            evaluation = np.array([gp.execute(X) for gp in
-                                   [self._programs[-1][i] for
-                                    i in hall_of_fame]])
-            if self.metric == 'spearman_icir':
+            # import pdb; pdb.set_trace()
+            evaluation = Parallel(n_jobs=n_jobs, verbose=int(self.verbose > 1))(delayed(gp.execute)(X) for gp in [self._programs[-1][i] for i in hall_of_fame])
+            # evaluation = np.array([gp.execute(X) for gp in [self._programs[-1][i] for i in hall_of_fame]])
+
+            if self._metric.stock_is:
                 evaluation_sub = X.iloc[:,[0]].copy()
                 evaluation_sub[0] = 0
                 evaluation_sub.drop(evaluation_sub.columns[0], axis=1, inplace=True)
-                for i in range(evaluation.shape[0]):
+                for i in range(len(evaluation)):
                     evaluation_sub[0] = evaluation[i]
                     evaluation_out = evaluation_sub.groupby(level=1).rank(pct=True)
                     evaluation[i] = evaluation_out[0]

@@ -140,7 +140,7 @@ def _weighted_spearman(yy, y_pred, w, decay=False):
 def _weighted_spearman_icir(y, y_pred, w, min_size=10, max_res=1000, err_res=-10, decay=False):
     """Calculate the weighted Spearman correlation coefficient icir."""
     corrs = _weighted_spearman(y, y_pred, w, decay)
-    res1 = abs(corrs.mean()) / corrs.std()
+    res1 = corrs.mean() / corrs.std()
 
     if len(corrs) <= min_size:
         return err_res
@@ -149,6 +149,42 @@ def _weighted_spearman_icir(y, y_pred, w, min_size=10, max_res=1000, err_res=-10
         return err_res
 
     return res1
+
+def _weighted_spearman_icir_mix(y, y_pred, w, min_size=10, max_res=1000, err_res=-10, decay=False, shift_num=10, mix_wt=1):
+    """Calculate the weighted Spearman correlation coefficient icir. Calculated for both y_pred and y_pred shifted and combine"""
+    res1 = _weighted_spearman_icir(y, y_pred, w, min_size, max_res, err_res, decay)
+    y_pred2 = y_pred.T.sort_index().shift(shift_num).T
+    res2 = _weighted_spearman_icir(y, y_pred2, w, min_size, max_res, err_res, decay)
+    wt1 = 1/(1+mix_wt)
+    wt2 = mix_wt/(1+mix_wt)
+
+    return res1 * wt1 + res2 * wt2
+
+def _long_only_performance(y, y_pred, w, top_ratio=0.2):
+    rets = []
+    avail_dates = y.columns.intersection(y_pred.columns)
+    for dt in avail_dates:
+        y_pred_sub = y_pred[dt].dropna()
+        y_sub = y[dt].dropna()
+        mask = y_pred_sub.index.intersection(y_sub.index)
+        if len(mask):
+            y_pred_sub = y_pred_sub.loc[mask]
+            y_sub = y_sub.loc[mask]
+            ret = y_sub.loc[y_pred_sub[y_pred_sub.rank(pct=True, ascending=False) <= top_ratio].index].mean()
+            rets.append(ret)
+    return pd.Series(rets)
+
+def _long_only_sharpe(y, y_pred, w, min_size=10, max_res=1000, err_res=-10, top_ratio=0.2):
+    rets = _long_only_performance(y, y_pred, w, top_ratio)
+    sharpe = rets.mean() / rets.std()
+
+    if len(rets) <= min_size:
+        return err_res
+
+    if np.isnan(sharpe) or sharpe > max_res:
+        return err_res
+
+    return sharpe
 
 def _mean_absolute_error(y, y_pred, w):
     """Calculate the mean absolute error."""
@@ -183,6 +219,12 @@ weighted_pearson = _Fitness(function=_weighted_pearson,
 weighted_spearman_icir = _Fitness(function=_weighted_spearman_icir,
                              greater_is_better=True,
                              stock_is=True)
+weighted_spearman_icir_mix = _Fitness(function=_weighted_spearman_icir_mix,
+                             greater_is_better=True,
+                             stock_is=True)
+long_only_sharpe = _Fitness(function=_long_only_sharpe,
+                             greater_is_better=True,
+                             stock_is=True)
 mean_absolute_error = _Fitness(function=_mean_absolute_error,
                                greater_is_better=False)
 mean_square_error = _Fitness(function=_mean_square_error,
@@ -203,4 +245,6 @@ _fitness_map = {'pearson': weighted_pearson,
                 'mse': mean_square_error,
                 'rmse': root_mean_square_error,
                 'log loss': log_loss,
-                'stock_dedicated':stock_dedicated}
+                'stock_dedicated':stock_dedicated,
+                'long_only_sharpe': long_only_sharpe,
+                'spearman_icir_mix': weighted_spearman_icir_mix}
