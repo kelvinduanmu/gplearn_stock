@@ -267,7 +267,7 @@ class BaseSymbolic(BaseEstimator, metaclass=ABCMeta):
                                      oob_fitness,
                                      remaining_time))
 
-    def fit(self, X, y, sample_weight=None):
+    def fit(self, X, y, sample_weight=None, formula=None):
         """Fit the Genetic Program according to X, y.
 
         Parameters
