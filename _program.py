@@ -20,6 +20,7 @@ from time import time
 from .functions import _Function
 from .utils import check_random_state
 import pandas as pd
+import re
 
 
 class _Program(object):
@@ -139,7 +140,8 @@ class _Program(object):
                  transformer=None,
                  feature_names=None,
                  program=None,
-                 fitness_params={}):
+                 fitness_params={},
+                 formula=None):
 
         self.function_set = function_set
         self.arities = arities
@@ -161,7 +163,7 @@ class _Program(object):
                 raise ValueError('The supplied program is incomplete.')
         else:
             # Create a naive random program,如果判断program wei none则进行建立program
-            self.program = self.build_program(random_state)
+            self.program = self.build_program(random_state, formula=formula)
 
         self.raw_fitness_ = None
         self.fitness_ = None
@@ -170,7 +172,52 @@ class _Program(object):
         self._max_samples = None
         self._indices_state = None
 
-    def build_program(self, random_state):
+    def _conversionToPostOrder(self, inOrdErexpr):
+        """
+        后序转换
+        """
+        bracket_lv = 0
+        ele_stack = ['', ['']]
+        for ch in inOrdErexpr:
+            if ch == ' ':
+                continue
+            elif ch == '(':
+                bracket_lv += 1
+                if bracket_lv == 1:
+                    continue
+            elif ch == ')':
+                bracket_lv -= 1
+                if bracket_lv == 0:
+                    continue
+            elif ch == ',' and bracket_lv == 1:
+                ele_stack[1].append('')
+                continue
+            if bracket_lv:
+                ele_stack[1][-1] += ch
+            else:
+                ele_stack[0] += ch
+        assert bracket_lv == 0
+        return ele_stack
+
+    def _get_function_from_string(self, string):
+        for function in self.function_set:
+            if function.name == string:
+                return function
+
+    def get_function_from_string(self, string):
+        function = self._get_function_from_string(string)
+        if function:
+            return function
+        else:
+            match = re.match(r"([^0-9]+)_([0-9]+)", string, re.I)
+            if match:
+                items = match.groups()
+            function = self._get_function_from_string(items[0])
+            if function:
+                function.set_d1(int(items[1]))
+            return function
+
+    def build_program(self, random_state, formula=None):
         """Build a naive random program.
 
         Parameters
@@ -184,6 +231,19 @@ class _Program(object):
             The flattened tree representation of the program.
 
         """
+        if formula:
+            ele_stack = self._conversionToPostOrder(formula)
+            if len(ele_stack[1][0]):
+                function = self.get_function_from_string(ele_stack[0])
+                program = [function]
+                for es in ele_stack[1]:
+                    program += self.build_program(random_state, es)
+            elif '.' in ele_stack[0]:
+                return [float(ele_stack[0])]
+            else:
+                return [self.feature_names.index(ele_stack[0])]
+            return program
+
         if self.init_method == 'half and half':
             method = ('full' if random_state.randint(2) else 'grow')
         else:
@@ -198,20 +258,19 @@ class _Program(object):
         function = self.function_set[function]
         if function.ts:
             d1 = random_state.choice(function.d1_list)
-            function.set_d1(d1)        
-        #print (function)
-        
+            function.set_d1(d1)
+            #print (function)
+            
         program = [function]
         terminal_stack = [function.arity] #function.arity 表示函数所需要的参数个数
         while terminal_stack:
             depth = len(terminal_stack)
             choice = self.n_features + len(self.function_set)          
-            choice = random_state.randint(choice) 
+            choice = random_state.randint(choice)
             #input()
             # Determine if we are adding a function or terminal,决定我们是继续添加功能，或者是终止
-            if (depth < max_depth) and (method == 'full' or
-                                        choice <= len(self.function_set)):
-                #print ('here1')                        
+            if (depth < max_depth) and (method == 'full' or choice <= len(self.function_set)):
+                #print ('here1')
                 function = random_state.randint(len(self.function_set))
                 function = self.function_set[function]
                 if function.ts:

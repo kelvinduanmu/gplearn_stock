@@ -38,7 +38,7 @@ __all__ = ['SymbolicRegressor', 'SymbolicClassifier', 'SymbolicTransformer']
 MAX_INT = np.iinfo(np.int32).max
 
 
-def _parallel_evolve(n_programs, parents, X, y, sample_weight, seeds, params):
+def _parallel_evolve(n_programs, parents, X, y, sample_weight, seeds, params, formula=None):
     """Private function used to build a batch of programs within a job."""
     ''' 一个进化函数'''
     n_samples, n_features = X.shape # 此为原版，如需要可调整回
@@ -125,7 +125,7 @@ def _parallel_evolve(n_programs, parents, X, y, sample_weight, seeds, params):
         #print (function_set)
         #input()
         # import pdb; pdb.set_trace()
-        program = _Program(function_set=function_set, arities=arities, init_depth=init_depth, init_method=init_method, n_features=n_features, metric=metric, transformer=transformer, const_range=const_range, p_point_replace=p_point_replace, parsimony_coefficient=parsimony_coefficient, feature_names=feature_names, random_state=random_state, program=program, n_history=n_history, fitness_params=fitness_params)
+        program = _Program(function_set=function_set, arities=arities, init_depth=init_depth, init_method=init_method, n_features=n_features, metric=metric, transformer=transformer, const_range=const_range, p_point_replace=p_point_replace, parsimony_coefficient=parsimony_coefficient, feature_names=feature_names, random_state=random_state, program=program, n_history=n_history, fitness_params=fitness_params, formula=formula)
 
         program.parents = genome
         
@@ -472,7 +472,11 @@ class BaseSymbolic(BaseEstimator, metaclass=ABCMeta):
             # Print header fields
             self._verbose_reporter()
         
-        for gen in range(prior_generations, self.generations):
+        if formula:
+            total_generations = 1
+        else:
+            total_generations = self.generations
+        for gen in range(prior_generations, total_generations):
             print(gen, u'current generation')
 
             start_time = time()
@@ -483,12 +487,15 @@ class BaseSymbolic(BaseEstimator, metaclass=ABCMeta):
                 parents = self._programs[gen - 1]
 
             # Parallel loop
+            if formula:
+                population_size = 1
+            else:
+                population_size = self.population_size
             n_jobs, n_programs, starts = _partition_estimators(
-                self.population_size, self.n_jobs)
+                population_size, self.n_jobs)
             seeds = random_state.randint(MAX_INT, size=self.population_size)
 
-            population = Parallel(n_jobs=n_jobs, verbose=int(self.verbose > 1))(delayed(_parallel_evolve)(n_programs[i], parents, X, y, sample_weight, seeds[starts[i]:starts[i + 1]], params) for i in range(n_jobs))
-
+            population = Parallel(n_jobs=n_jobs, verbose=int(self.verbose > 1))(delayed(_parallel_evolve)(n_programs[i], parents, X, y, sample_weight, seeds[starts[i]:starts[i + 1]], params, formula=formula) for i in range(n_jobs))
             # Reduce, maintaining order across different n_jobs
             population = list(itertools.chain.from_iterable(population))
             #print (population,'ninininini')
@@ -581,23 +588,26 @@ class BaseSymbolic(BaseEstimator, metaclass=ABCMeta):
                 evaluation = pd.concat([pd.Series(ele) for ele in evaluation], axis=1)
                 # evaluation = np.apply_along_axis(rankdata, 1, evaluation)
 
-            with np.errstate(divide='ignore', invalid='ignore'):
-                correlations = np.abs(evaluation.corr()).values
-            np.fill_diagonal(correlations, 0.)
-            components = list(range(self.hall_of_fame))
-            indices = list(range(self.hall_of_fame))
-            # Iteratively remove least fit individual of most correlated pair
-            while len(components) > self.n_components:
-                most_correlated = np.unravel_index(np.argmax(correlations), correlations.shape)
-                # The correlation matrix is sorted by fitness, so identifying
-                # the least fit of the pair is simply getting the higher index
-                worst = max(most_correlated)
-                components.pop(worst)
-                indices.remove(worst)
-                correlations = correlations[:, indices][indices, :]
-                indices = list(range(len(components)))
+            if formula:
+                self._best_programs = self._programs[-1]
+            else:
+                with np.errstate(divide='ignore', invalid='ignore'):
+                    correlations = np.abs(evaluation.corr()).values
+                np.fill_diagonal(correlations, 0.)
+                components = list(range(self.hall_of_fame))
+                indices = list(range(self.hall_of_fame))
+                # Iteratively remove least fit individual of most correlated pair
+                while len(components) > self.n_components:
+                    most_correlated = np.unravel_index(np.argmax(correlations), correlations.shape)
+                    # The correlation matrix is sorted by fitness, so identifying
+                    # the least fit of the pair is simply getting the higher index
+                    worst = max(most_correlated)
+                    components.pop(worst)
+                    indices.remove(worst)
+                    correlations = correlations[:, indices][indices, :]
+                    indices = list(range(len(components)))
 
-            self._best_programs = [self._programs[-1][i] for i in hall_of_fame[components]]
+                self._best_programs = [self._programs[-1][i] for i in hall_of_fame[components]]
 
         else:
             # Find the best individual in the final generation
