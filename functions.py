@@ -38,11 +38,12 @@ class _Function(object):
 
     """
 
-    def __init__(self, function, name, arity, ts=False):
+    def __init__(self, function, name, arity, ts=False, assist=False):
         self.function = function
         self.name = name
         self.arity = arity
         self.ts = ts
+        self.assist = assist
 
     def __call__(self, *args):
         args2 = []
@@ -62,6 +63,12 @@ class _Function(object):
 
     def set_d1_list(self, d1_list):
         self.d1_list = d1_list
+
+    def set_assist_col(self, idx):
+        """
+        idx: index of risk_cols
+        """
+        self.assist_col = idx
 
 def make_function(function, name, arity, wrap=True):
     """Make a function node, a representation of a mathematical relationship.
@@ -182,7 +189,7 @@ def _ts_corr(x1, y1, d1):
     comb_data = pd.concat([x1, y1], axis=1).unstack()
     result = pd.Series(index=x1.index).unstack(level=0)
     for code in comb_data.index:
-        res = comb_data.loc[code].unstack(level=0).rolling(d1).corr().drop(comb_data.columns.levels[0][0], level=1).droplevel(1)[comb_data.columns.levels[0][0]]
+        res = comb_data.loc[code].unstack(level=0).sort_index().rolling(d1).corr().drop(comb_data.columns.levels[0][0], level=1).droplevel(1)[comb_data.columns.levels[0][0]]
         if res.dropna().shape[0]:
             result[code] = res
     return result.stack().swaplevel(0,1)
@@ -192,7 +199,7 @@ def _ts_cov(x1, y1, d1):
     comb_data = pd.concat([x1, y1], axis=1).unstack()
     result = pd.Series(index=x1.index).unstack(level=0)
     for code in comb_data.index:
-        res = comb_data.loc[code].unstack(level=0).rolling(d1).cov().drop(comb_data.columns.levels[0][0], level=1).droplevel(1)[comb_data.columns.levels[0][0]]
+        res = comb_data.loc[code].unstack(level=0).sort_index().rolling(d1).cov().drop(comb_data.columns.levels[0][0], level=1).droplevel(1)[comb_data.columns.levels[0][0]]
         if res.dropna().shape[0]:
             result[code] = res
     return result.stack().swaplevel(0,1)
@@ -204,15 +211,25 @@ def _delta(x1, d1):
     y1 = x1.groupby(level=0).diff(d1)
     return y1
 
+# def _decay_linear(x1, d1):
+#     d1 = max(3, d1)
+#     y1 = x1.unstack(level=0).rolling(d1).apply(lambda x: (x*np.arange(1,d1+1)).sum()/np.arange(1, d1+1).sum(), raw=True)
+#     return y1.stack().swaplevel(0,1)
+
+# def _decay_exp(x1, d1):
+#     d1 = max(3, d1)
+#     y1 = x1.unstack(level=0).rolling(d1).apply(lambda x: (x*np.exp(-np.arange(d1-1,-1,-1)/1/4)).sum()/np.exp(-np.arange(d1-1,-1,-1)/1/4).sum(), raw=True)
+#     return y1.stack().swaplevel(0,1)
+
 def _decay_linear(x1, d1):
     d1 = max(3, d1)
-    y1 = x1.unstack(level=0).rolling(d1).apply(lambda x: (x*np.arange(1,d1+1)).sum()/np.arange(1, d1+1).sum(), raw=True)
+    y1 = x1.unstack(level=0).sort_index().rolling(d1).apply(lambda x: (x*np.arange(1,d1+1)).sum(), raw=True)
     return y1.stack().swaplevel(0,1)
 
 def _decay_exp(x1, d1):
     d1 = max(3, d1)
-    y1 = x1.unstack(level=0).rolling(d1).apply(lambda x: (x*np.exp(-np.arange(d1-1,-1,-1)/1/4)).sum()/np.exp(-np.arange(d1-1,-1,-1)/1/4).sum(), raw=True)
-    return y1.stack().swaplevel(0,1)    
+    y1 = x1.unstack(level=0).sort_index().rolling(d1).apply(lambda x: (x*np.exp(-np.arange(d1-1,-1,-1)/1/4)).sum(), raw=True)
+    return y1.stack().swaplevel(0,1)
 
 # 返回值为向量，过去d天的最小值————时序函数
 def _ts_min(X1,d1):
@@ -275,6 +292,35 @@ def _norm(x1):
 def _fill(x1):
     return x1.fillna(0)
 
+def _neu_cross(x1, y1):
+    factor_df = x1.unstack(level=0).sort_index()
+    zscores_f = pd.DataFrame(columns=factor_df.columns, index=factor_df.index, dtype=float)
+    for idx in factor_df.index:
+        response = factor_df.loc[idx]
+        train = y1.unstack(level=0).loc[idx].unstack(level=0)
+
+        if response.notnull().any() and train.notnull().any().any():
+            response = response[response.notnull()]
+            train = train[train.notnull().all(axis=1)]
+            mask = response.index.intersection(train.index)
+            if len(mask) > 10:
+                train = train.loc[mask]
+                train = train.loc[:, ~(train == 0).all()].values
+                response = response[mask].values
+                resid = _neu(train, response)
+                zscores_f.loc[idx] = pd.Series(resid, index=mask)
+    return zscores_f.stack().swaplevel(0,1)
+
+def _neu(train, response):
+    if train.shape[1] == 1:
+        a_c = np.ones((response.shape[0], 1))
+        train = np.hstack((a_c, train))
+    train_trans = np.transpose(train)
+    m = np.linalg.inv(np.dot(train_trans, train))
+    param = np.dot(np.dot(m, train_trans), response)
+    y_pred = np.dot(train, param)
+    return response - y_pred
+
 # fundamental functions
 add2 = _Function(function=np.add, name='add', arity=2)
 sub2 = _Function(function=np.subtract, name='sub', arity=2)
@@ -297,6 +343,9 @@ fillna0 = _Function(function=_fill, name='fill0', arity=1)
 rank_cross = _Function(function=_rank_cross, name='rank', arity=1)
 scale = _Function(function=_scale, name='scale', arity=1)
 normalize = _Function(function=_norm, name='norm', arity=1)
+
+# special functions: neutralize
+neutralize = _Function(function=_neu_cross, name='neu', arity=1, assist=True)
 
 # time-series functions
 rank = _Function(function=_rank, name='rank_ts', arity=1, ts=True)
@@ -354,4 +403,5 @@ _function_map = {'add': add2,
                  'product': ts_product,
                  'std': ts_stddev,
                  'norm': normalize,
-                 'fill0': fillna0}
+                 'fill0': fillna0,
+                 'neu': neutralize}

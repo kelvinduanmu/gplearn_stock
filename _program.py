@@ -141,7 +141,9 @@ class _Program(object):
                  feature_names=None,
                  program=None,
                  fitness_params={},
-                 formula=None):
+                 formula=None,
+                 risk_cols=[],
+                 risk_types=[]):
 
         self.function_set = function_set
         self.arities = arities
@@ -156,7 +158,9 @@ class _Program(object):
         self.feature_names = feature_names
         self.program = program
         self.n_history = n_history
-        self.fitness_params=fitness_params
+        self.fitness_params = fitness_params
+        self.risk_cols = risk_cols
+        self.risk_types = risk_types
 
         if self.program is not None:
             if not self.validate_program():
@@ -235,6 +239,12 @@ class _Program(object):
             ele_stack = self._conversionToPostOrder(formula)
             if len(ele_stack[1][0]):
                 function = self.get_function_from_string(ele_stack[0])
+                if function.assist:
+                    assert isinstance(ele_stack[1][1], str)
+                    for i in range(len(self.risk_cols)):
+                        if self.feature_names[self.risk_cols[i]] == ele_stack[1][1]:
+                            function.set_assist_col(i)
+                            break
                 program = [function]
                 for es in ele_stack[1]:
                     program += self.build_program(random_state, es)
@@ -260,7 +270,10 @@ class _Program(object):
             d1 = random_state.choice(function.d1_list)
             function.set_d1(d1)
             #print (function)
-            
+        if function.assist:
+            idx = random_state.randint(len(self.risk_cols))
+            function.set_assist_col(idx)
+
         program = [function]
         terminal_stack = [function.arity] #function.arity 表示函数所需要的参数个数
         while terminal_stack:
@@ -276,6 +289,9 @@ class _Program(object):
                 if function.ts:
                     d1 = random_state.choice(function.d1_list)
                     function.set_d1(d1)
+                if function.assist:
+                    idx = random_state.randint(len(self.risk_cols))
+                    function.set_assist_col(idx)
                 program.append(function)
                 terminal_stack.append(function.arity)
             else:
@@ -318,12 +334,17 @@ class _Program(object):
 
     def __str__(self):
         """Overloads `print` output of the object to resemble a LISP tree."""
-        terminals = [0]
+        terminals = [[0, False]]
         output = ''
         for i, node in enumerate(self.program):
             #print (u'i',i,u'node','node')
             if isinstance(node, _Function):
-                terminals.append(node.arity)
+                to_append = [node.arity]
+                if node.assist:
+                    to_append.append(node.assist_col)
+                else:
+                    to_append.append(node.assist)
+                terminals.append(to_append)
                 node_name = node.name
                 if node.ts:
                     node_name += '_{}'.format(node.d1)
@@ -336,10 +357,13 @@ class _Program(object):
                         output += self.feature_names[node]
                 else:
                     output += '%.3f' % node
-                terminals[-1] -= 1
-                while terminals[-1] == 0:
-                    terminals.pop()
-                    terminals[-1] -= 1
+                terminals[-1][0] -= 1
+                while terminals[-1][0] == 0:
+                    arity, assist_col = terminals.pop()
+                    if assist_col is not False:
+                        output += ', '
+                        output += self.feature_names[self.risk_cols[assist_col]]
+                    terminals[-1][0] -= 1
                     output += ')'
                 if i != len(self.program) - 1:
                     output += ', '
@@ -462,6 +486,11 @@ class _Program(object):
                 function = apply_stack[-1][0]
                 terminals = [pd.Series([t] * XX.shape[0], index=XX.index) if isinstance(t, float) else XX.loc[:, XX.columns[t]] if isinstance(t, int) else t for t in apply_stack[-1][1:]]
                 # terminals = [np.repeat(t, XX.shape[0]) if isinstance(t, float) else XX.loc[:, XX.columns[t]] if isinstance(t, int) else t for t in apply_stack[-1][1:]]
+                if function.assist:
+                    risk_df = XX.loc[:, [XX.columns[self.risk_cols[function.assist_col]]]]
+                    if self.risk_types[function.assist_col]:
+                        risk_df = pd.get_dummies(risk_df.iloc[:,0])
+                    terminals.append(risk_df)
                 intermediate_result = function(*terminals)
                 if len(apply_stack) != 1:
                     apply_stack.pop()
@@ -567,7 +596,8 @@ class _Program(object):
         sample_weight = pd.Series(np.ones(len(y_pred)), index=y_pred.index)
         if self.fitness_params:
             raw_fitness = self.metric(y, y_pred, sample_weight, **self.fitness_params)
-        raw_fitness = self.metric(y, y_pred, sample_weight)
+        else:
+            raw_fitness = self.metric(y, y_pred, sample_weight)
         del X,y,y_pred
         gc.collect()
         return raw_fitness
@@ -758,6 +788,9 @@ class _Program(object):
                     # d1 = random_state.randint(self.n_history + 1)
                     d1 = random_state.choice(replacement.d1_list)
                     replacement.set_d1(d1)
+                if replacement.assist:
+                    idx = random_state.randint(len(self.risk_cols))
+                    replacement.set_assist_col(idx)
                 program[node] = replacement
             else:
                 # We've got a terminal, add a const or variable

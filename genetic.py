@@ -59,6 +59,9 @@ def _parallel_evolve(n_programs, parents, X, y, sample_weight, seeds, params, fo
     feature_names = params['feature_names']
     n_history = params['n_history']
     fitness_params = params['fitness_params']
+    risk_cols = params['risk_cols']
+    risk_types = params['risk_types']
+    force_neu = params['force_neu']
 
     max_samples = int(max_samples * n_samples)
     def _tournament():
@@ -125,7 +128,7 @@ def _parallel_evolve(n_programs, parents, X, y, sample_weight, seeds, params, fo
         #print (function_set)
         #input()
         # import pdb; pdb.set_trace()
-        program = _Program(function_set=function_set, arities=arities, init_depth=init_depth, init_method=init_method, n_features=n_features, metric=metric, transformer=transformer, const_range=const_range, p_point_replace=p_point_replace, parsimony_coefficient=parsimony_coefficient, feature_names=feature_names, random_state=random_state, program=program, n_history=n_history, fitness_params=fitness_params, formula=formula)
+        program = _Program(function_set=function_set, arities=arities, init_depth=init_depth, init_method=init_method, n_features=n_features, metric=metric, transformer=transformer, const_range=const_range, p_point_replace=p_point_replace, parsimony_coefficient=parsimony_coefficient, feature_names=feature_names, random_state=random_state, program=program, n_history=n_history, fitness_params=fitness_params, formula=formula, risk_cols=risk_cols, risk_types=risk_types)
 
         program.parents = genome
         
@@ -144,6 +147,14 @@ def _parallel_evolve(n_programs, parents, X, y, sample_weight, seeds, params, fo
         oob_sample_weight[indices] = 0
         bb = time()
         #print (u'花费事假',time() - tt)
+        if force_neu:
+            orig_program = program.program.copy()
+            neu_program = program.program.copy()
+            for i in range(len(risk_cols)):
+                neu_func = program.get_function_from_string('neu')
+                neu_func.set_assist_col(i)
+                neu_program = [neu_func] + neu_program
+            program.program = neu_program
         program.raw_fitness_ = program.raw_fitness(X, y, curr_sample_weight)
         #print (u'这里时间',time()-bb)
         #a = time()
@@ -152,6 +163,8 @@ def _parallel_evolve(n_programs, parents, X, y, sample_weight, seeds, params, fo
             program.oob_fitness_ = program.raw_fitness(X, y, oob_sample_weight)
            # print (time() - a,u'第二个raw_fitness')
             #input()
+        if force_neu:
+            program.program = orig_program
         programs.append(program)
 
     return programs
@@ -222,9 +235,23 @@ class BaseSymbolic(BaseEstimator, metaclass=ABCMeta):
         self.random_state = random_state
         self.n_history = n_history
         self.fitness_params = {}
+        self.risk_cols = []
+        self.risk_types = []
 
     def set_fitness_parameters(self, params):
         self.fitness_params = params
+
+    def set_risk_cols(self, risk_cols, force_neu=False):
+        """
+        risk_cols: int represent index of feature_names
+        risk_types: bool False for numeric, True for categorical
+        """
+        self.risk_cols = []
+        self.risk_types = []
+        self.force_neu = force_neu
+        for c, t in risk_cols:
+            self.risk_cols.append(self.feature_names.index(c))
+            self.risk_types.append(t)
 
     def _verbose_reporter(self, run_details=None):
         """A report of the progress of the evolution process.
@@ -369,7 +396,7 @@ class BaseSymbolic(BaseEstimator, metaclass=ABCMeta):
                 raise ValueError('Unsupported metric: %s' % self.metric)
             self._metric = _fitness_map[self.metric]
         elif isinstance(self, TransformerMixin):
-            if self.metric not in ('pearson', 'spearman_icir', 'long_only_sharpe', 'spearman_icir_mix'):
+            if self.metric not in ('pearson', 'spearman_icir', 'long_only_sharpe', 'spearman_icir_mix', 'spearman_icir_defreq'):
                 raise ValueError('Unsupported metric: %s' % self.metric)
             self._metric = _fitness_map[self.metric]
         if self.metric in ('stock_dedicate'):
@@ -438,6 +465,9 @@ class BaseSymbolic(BaseEstimator, metaclass=ABCMeta):
         params['method_probs'] = self._method_probs
         params['n_history'] = self.n_history
         params['fitness_params'] = self.fitness_params
+        params['risk_cols'] = self.risk_cols
+        params['risk_types'] = self.risk_types
+        params['force_neu'] = self.force_neu
 
         if not self.warm_start or not hasattr(self, '_programs'):
             # Free allocated memory, if any
