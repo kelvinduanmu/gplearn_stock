@@ -161,6 +161,24 @@ def _weighted_spearman_icir_mix(y, y_pred, w, min_size=(10, 1000), max_res=1000,
 
     return res1 * wt1 + res2 * wt2
 
+def _defrequency_ret_data(ret_data, holding):
+    ret_data = ret_data.sort_index()
+    if holding > 1:
+        ret_data['idx'] = np.arange(ret_data.shape[0])
+        test_ret = ((ret_data + 1).groupby(ret_data.idx // holding)).prod().drop('idx', axis=1)
+        test_ret.index = ret_data.index[0::holding]
+        test_ret.index.name = 'TradingDay'
+        test_ret -= 1
+        return test_ret.replace(0,np.nan)
+    return ret_data
+
+def _weighted_spearman_icir_defreq(yy, y_pred, w, min_size=(10, 1000), max_res=1000, err_res=-10, decay=False, step_size=5):
+    """Calculate the weighted Spearman correlation coefficient icir. Use subsampling y_pred, and rolling sum y."""
+    yy2 = _defrequency_ret_data(yy.T.sort_index(), step_size)
+    y_pred2 = y_pred.T.loc[yy2.index.intersection(y_pred.T.index)].T
+    yy2 = yy2.T
+    return _weighted_spearman_icir(yy2, y_pred2, w, min_size, max_res, err_res, decay)
+
 def _long_only_performance(y, y_pred, w, top_ratio=0.2):
     rets = []
     avail_dates = y.columns.intersection(y_pred.columns)
@@ -220,6 +238,9 @@ weighted_pearson = _Fitness(function=_weighted_pearson,
 weighted_spearman_icir = _Fitness(function=_weighted_spearman_icir,
                              greater_is_better=True,
                              stock_is=True)
+weighted_spearman_icir_defreq = _Fitness(function=_weighted_spearman_icir_defreq,
+                             greater_is_better=True,
+                             stock_is=True)
 weighted_spearman_icir_mix = _Fitness(function=_weighted_spearman_icir_mix,
                              greater_is_better=True,
                              stock_is=True)
@@ -248,4 +269,5 @@ _fitness_map = {'pearson': weighted_pearson,
                 'log loss': log_loss,
                 'stock_dedicated':stock_dedicated,
                 'long_only_sharpe': long_only_sharpe,
-                'spearman_icir_mix': weighted_spearman_icir_mix}
+                'spearman_icir_mix': weighted_spearman_icir_mix,
+                'spearman_icir_defreq': weighted_spearman_icir_defreq}
