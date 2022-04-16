@@ -143,7 +143,8 @@ class _Program(object):
                  fitness_params={},
                  formula=None,
                  risk_cols=[],
-                 risk_types=[]):
+                 risk_types=[],
+                 store_y=False):
 
         self.function_set = function_set
         self.arities = arities
@@ -161,6 +162,7 @@ class _Program(object):
         self.fitness_params = fitness_params
         self.risk_cols = risk_cols
         self.risk_types = risk_types
+        self.store_y = store_y
 
         if self.program is not None:
             if not self.validate_program():
@@ -236,6 +238,7 @@ class _Program(object):
 
         """
         if formula:
+            self.store_y = True
             ele_stack = self._conversionToPostOrder(formula)
             if len(ele_stack[1][0]):
                 function = self.get_function_from_string(ele_stack[0])
@@ -592,6 +595,8 @@ class _Program(object):
             y_pred = self.stock_excute(X,y)
         if self.transformer:
             y_pred = self.transformer(y_pred)
+        if self.store_y:
+            self.y_pred = y_pred.copy()
         # sample_weight = [1 for i in range(len(y_pred))]
         sample_weight = pd.Series(np.ones(len(y_pred)), index=y_pred.index)
         if self.fitness_params:
