@@ -103,7 +103,7 @@ def make_fitness(function, greater_is_better, wrap=True):
                     greater_is_better=greater_is_better)
 
 
-def _weighted_pearson(y, y_pred, ww, min_size=1000, decay=False):
+def _weighted_pearson(y, y_pred, ww, min_size=20, decay=False):
     """Calculate the weighted Pearson correlation coefficient."""
     corrs = []
     avail_dates = y.columns.intersection(y_pred.columns)
@@ -130,14 +130,14 @@ def _weighted_pearson(y, y_pred, ww, min_size=1000, decay=False):
     # return 0.
 
 
-def _weighted_spearman(yy, y_pred, w, min_size=1000, decay=False):
+def _weighted_spearman(yy, y_pred, w, min_size=20, decay=False):
     """Calculate the weighted Spearman correlation coefficient."""
     y_pred_ranked = y_pred.rank()
     yy = yy.copy()
     y_ranked = yy.rank()
     return _weighted_pearson(y_ranked, y_pred_ranked, w, min_size, decay)
 
-def _weighted_spearman_icir(y, y_pred, w, min_size=(10, 1000), max_res=1000, err_res=-10, decay=False):
+def _weighted_spearman_icir(y, y_pred, w, min_size=(10, 20), max_res=1000, err_res=-10, decay=False):
     """Calculate the weighted Spearman correlation coefficient icir."""
     min_size1, min_size2 = min_size
     corrs = _weighted_spearman(y, y_pred, w, min_size2, decay)
@@ -151,7 +151,7 @@ def _weighted_spearman_icir(y, y_pred, w, min_size=(10, 1000), max_res=1000, err
 
     return res1
 
-def _weighted_spearman_icir_mix(y, y_pred, w, min_size=(10, 1000), max_res=1000, err_res=-10, decay=False, shift_num=10, mix_wt=1):
+def _weighted_spearman_icir_mix(y, y_pred, w, min_size=(10, 20), max_res=1000, err_res=-10, decay=False, shift_num=10, mix_wt=1):
     """Calculate the weighted Spearman correlation coefficient icir. Calculated for both y_pred and y_pred shifted and combine"""
     res1 = _weighted_spearman_icir(y, y_pred, w, min_size, max_res, err_res, decay)
     y_pred2 = y_pred.T.sort_index().shift(shift_num).T
@@ -172,7 +172,7 @@ def _defrequency_ret_data(ret_data, holding):
         return test_ret.replace(0,np.nan)
     return ret_data
 
-def _weighted_spearman_icir_defreq(yy, y_pred, w, min_size=(10, 1000), max_res=1000, err_res=-10, decay=False, step_size=5):
+def _weighted_spearman_icir_defreq(yy, y_pred, w, min_size=(10, 20), max_res=1000, err_res=-10, decay=False, step_size=5):
     """Calculate the weighted Spearman correlation coefficient icir. Use subsampling y_pred, and rolling sum y."""
     yy2 = _defrequency_ret_data(yy.T.sort_index(), step_size)
     y_pred2 = y_pred.T.loc[yy2.index.intersection(y_pred.T.index)].T
