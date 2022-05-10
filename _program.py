@@ -247,6 +247,7 @@ class _Program(object):
                     for i in range(len(self.risk_cols)):
                         if self.feature_names[self.risk_cols[i]] == ele_stack[1][1]:
                             function.set_assist_col(i)
+                            ele_stack[1].pop()
                             break
                 program = [function]
                 for es in ele_stack[1]:
